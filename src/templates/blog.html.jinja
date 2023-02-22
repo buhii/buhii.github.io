@@ -1,0 +1,11 @@
+{% extends 'base.html.jinja' %}
+
+{% block content %}
+
+  <div class="article-container">
+    <span class="article-date"><h2>{{ date|pretty_date }}</h2></span>
+    <span class="article-content">
+      {{ content }}
+    </span>
+  </div>
+{% endblock %}

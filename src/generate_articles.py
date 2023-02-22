@@ -1,9 +1,13 @@
 import argparse
 import re
+from collections import defaultdict
 from pathlib import Path
 
+import mistune
 from jinja2 import Environment, FileSystemLoader
 from bs4 import BeautifulSoup
+
+from custom_filters import register_custom_filters
 
 
 def prettify(content):
@@ -27,29 +31,63 @@ RE_BLOG = re.compile("(?P<date>\d{8})\-(?P<target>.*)\-(?P<lang>(en|ja))\.md")
 def generate_blog(environment, contents_dir, output_dir):
 
     # Collect blog articles markdown
-    targets = []
+    targets = defaultdict(list)
+
     for path in contents_dir.glob("*.md"):
         m = RE_BLOG.match(path.name)
         if not m:
             continue
-        targets.append(m.groupdict())
 
-    articles = sorted(
-        targets,
-        key=lambda d: d["date"],
-        reverse=True,
-    )
+        data = m.groupdict()
+        lang = data["lang"]
+        target = data["target"]
+        with open(path) as f:
+            content = f.read()
+        data["content"] = mistune.html(content)
+        title = content.splitlines()[0].replace("#", "").strip()
+        data["title"] = title
 
-    # Generate a list of articles html
+        filename_suffix = f"_{lang}" if lang != "en" else ""
+        data["url"] = f"{target}{filename_suffix}.html"
+
+        targets[lang].append(data)
+
+    # Create blog/ directory
     output_dir.mkdir(exist_ok=True)
 
+    # Generate a list of articles html
     index_template = environment.get_template("blog-articles.html.jinja")
-    rendered = index_template.render(
-        articles=articles,
-        lang_option=True,
-    )
-    with open(output_dir / "index.html", mode="w", encoding="utf-8") as f:
-        f.write(rendered)
+
+    for lang, filename_suffix in (("en", ""), ("ja", "_ja")):
+        articles = sorted(
+            targets[lang],
+            key=lambda data: data["date"],
+            reverse=True
+        )
+        rendered = index_template.render(
+            articles=articles,
+            lang_option=True,
+            url_en="/blog/index.html",
+            url_ja="/blog/index_ja.html",
+        )
+        with open(output_dir / f"index{filename_suffix}.html", mode="w", encoding="utf-8") as f:
+            f.write(rendered)
+
+    # Generate articles
+    blog_template = environment.get_template("blog.html.jinja")
+
+    for lang, filename_suffix in (("en", ""), ("ja", "_ja")):
+        for article in targets[lang]:
+            target = article["target"]
+            rendered = blog_template.render(
+                date=article["date"],
+                content=article["content"],
+                lang_option=True,
+                url_en=f"{target}.html",
+                url_ja=f"{target}_ja.html",
+            )
+            with open(output_dir / f"{target}{filename_suffix}.html", mode="w", encoding="utf-8") as f:
+                f.write(rendered)
 
 
 def main(output_dir, contents_dir="contents"):
@@ -57,6 +95,7 @@ def main(output_dir, contents_dir="contents"):
     output_dir = Path(output_dir)
 
     environment = Environment(loader=FileSystemLoader("templates/"))
+    register_custom_filters(environment)
 
     render(
         environment.get_template("misc.html.jinja"),

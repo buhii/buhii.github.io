@@ -19,14 +19,33 @@
             <a href="/">About</a>
             <a href="https://github.com/buhii/">GitHub</a>
 
-            {% if lang_option %}
+            
             <span class="lang-option">
-                <a href="{{ url_en }}">English</a>
-                <a href="{{ url_ja }}">Japanese</a>
+                <a href="/blog/index.html">English</a>
+                <a href="/blog/index_ja.html">Japanese</a>
             </span>
-            {% endif %}
+            
         </div>
 
-        {% block content required %}{% endblock %}
+        
+
+<div class="article-list">
+
+  
+  <div class="article">
+    <span class="article-list-date">
+      2023-02-21
+    </span>
+    <span class="article-list-title">
+      <a href="moi_ja.html">
+        こんにちは、世界
+      </a>
+    </span>
+  </div>
+  
+
+</div>
+
+
     </body>
 </html>
