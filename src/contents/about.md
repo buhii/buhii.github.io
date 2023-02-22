@@ -1,29 +1,4 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>Takahiro Kamatani's Home Page</title>
-
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-
-        <meta name="keywords" content="Takahiro Kamatani,buhii,tkamatani">
-        <meta name="description" content="A programmer living in Tokyo">
-        <link rel="stylesheet" type="text/css" href="/media/base.css">
-        <link rel="icon" type="image/png" href="/favicon.png" />
-    </head>
-    <body>
-        <h1><a href="/">Takahiro Kamatani's Home Page</a></h1>
-        <div class="nav">
-            <a href="/blog/">Blog</a>
-            <a href="/projects/">Projects</a>
-            <a href="https://github.com/buhii/">GitHub</a>
-            <a href="/">About</a>
-
-            
-        </div>
-
-        
-  <div class="introduction">
+<div class="introduction">
     <p>
         My name is Takahiro Kamatani.
         I am a programmer living in Tokyo.
@@ -49,7 +24,3 @@
         <li>K. Suzuki, M. Kyoya, <u>T. Kamatani</u>, and T. Uchiyama, <a href="https://doi.org/10.5281/zenodo.1179633">"beacon: Embodied Sound Media Environment for Socio-Musical Interaction,"</a> in Proceedings of the International Conference on New Interfaces for Musical Expression (NIME), 2008.
     </ul>
 </div>
-
-
-    </body>
-</html>

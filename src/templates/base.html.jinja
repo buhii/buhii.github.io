@@ -19,26 +19,14 @@
             <a href="https://github.com/buhii/">GitHub</a>
             <a href="/">About</a>
 
-            
+            {% if lang_option %}
             <span class="lang-option">
                 <a href="{url_en}">English</a>
                 <a href="{url_ja}">Japanese</a>
             </span>
-            
+            {% endif %}
         </div>
 
-        
-
-
-
-{'date': '20230221', 'target': 'moi', 'lang': 'en'}
-
-
-
-{'date': '20230221', 'target': 'moi', 'lang': 'ja'}
-
-
-
-
+        {% block content required %}{% endblock %}
     </body>
 </html>
