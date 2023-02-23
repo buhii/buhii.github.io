@@ -69,27 +69,43 @@ a:hover {
 }
 
 .lang-option {
-    float: right;
-    right: 0px;
+    display: flex;
+}
+@media only screen and (min-width: 600px) {
+    .lang-option {
+        float: right;
+        right: 0px;
+    }
 }
 
 .article-container {
-    display: grid;
-    grid-template-columns: 10em auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .article-list-date {
-    width: 10em;
-    display: inline-block;
-    padding-left: 0em;
+    order: 1;
 }
 
 .article-list-title {
-    display: inline-block;
+    order: 2;
+}
+
+@media only screen and (min-width: 600px) {
+    .article-container {
+        display: grid;
+        grid-template-columns: 10em auto;
+    }
+    .article-list-date {
+        order: unset;
+        padding-bottom: unset;
+    }
 }
 
 .article-date {
+    order: 1;
 }
 
 .article-content {
+    order: 2;
 }

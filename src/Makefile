@@ -4,6 +4,3 @@ blog:
 
 setup:
 	pip install -r requirements.txt
-
-dev-server:
-	(cd ../..; python -m http.server)

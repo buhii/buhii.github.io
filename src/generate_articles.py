@@ -67,6 +67,7 @@ def generate_blog(environment, contents_dir, output_dir):
         rendered = index_template.render(
             articles=articles,
             lang_option=True,
+            lang=lang,
             url_en="/blog/index.html",
             url_ja="/blog/index_ja.html",
         )
@@ -83,6 +84,7 @@ def generate_blog(environment, contents_dir, output_dir):
                 date=article["date"],
                 content=article["content"],
                 lang_option=True,
+                lang=lang,
                 url_en=f"{target}.html",
                 url_ja=f"{target}_ja.html",
             )

@@ -14,7 +14,11 @@
     <body>
         <h1><a href="/">Takahiro Kamatani's Home Page</a></h1>
         <div class="nav">
+            {% if lang == 'ja' %}
+            <a href="/blog/index_ja.html">Blog</a>
+            {% else %}
             <a href="/blog/">Blog</a>
+            {% endif %}
             <a href="/projects/">Projects</a>
             <a href="/">About</a>
             <a href="https://github.com/buhii/">GitHub</a>
