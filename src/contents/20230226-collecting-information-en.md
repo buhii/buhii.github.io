@@ -1,6 +1,6 @@
 ## A Short List of Sources I Use As An Ordinary Engineer
 
-In this article, I will share my go-to sources for information gathering. While most of them are engineering-related, I will also list miscellaneous ones. I would like to know your similar sources as well.
+In this article, I will share my go-to sources for information gathering. While most of them are software-engineering-related, I will also list miscellaneous ones. I would like to know your similar sources as well.
 
 <!-- more -->
 
