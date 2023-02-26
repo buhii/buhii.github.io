@@ -6,13 +6,13 @@
 
   {% for article in articles %}
   <div class="article-container">
-    <span class="article-list-date">
-      {{ article.date|pretty_date }}
-    </span>
-    <span class="article-list-title">
-      <a href="{{ article.url }}">
-        {{ article.title }}
-      </a>
+    <span class="article-date"><h2>{{ article.date|pretty_date }}</h2></span>
+    <span class="article-content">
+      <a href="{{ article.url }}"><h2>{{ article.title }}</h2></a>
+      {{ article.short_content }}
+      {% if article.residual %}
+      <a href="{{ article.url }}">(...to be continued...)</a>
+      {% endif %}
     </span>
   </div>
   {% endfor %}

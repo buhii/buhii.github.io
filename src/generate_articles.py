@@ -25,6 +25,8 @@ def render(base_template, content_path, output_path):
         f.write(rendered)
 
 
+
+CONTINUOUS_SEPARATOR = "<!-- more -->"
 RE_BLOG = re.compile("(?P<date>\d{8})\-(?P<target>.*)\-(?P<lang>(en|ja))\.md")
 
 
@@ -38,19 +40,23 @@ def generate_blog(environment, contents_dir, output_dir):
         if not m:
             continue
 
-        data = m.groupdict()
-        lang = data["lang"]
-        target = data["target"]
+        article = m.groupdict()
+        lang = article["lang"]
+        target = article["target"]
         with open(path) as f:
             content = f.read()
-        data["content"] = mistune.html(content)
+
+        article["content"] = mistune.html(content)
+        short_content, _, residual = content.partition(CONTINUOUS_SEPARATOR)
+        article["short_content"] = mistune.html(short_content.partition("\n")[2])
+        article["residual"] = residual
         title = content.splitlines()[0].replace("#", "").strip()
-        data["title"] = title
+        article["title"] = title
 
         filename_suffix = f"_{lang}" if lang != "en" else ""
-        data["url"] = f"{target}{filename_suffix}.html"
+        article["url"] = f"{target}{filename_suffix}.html"
 
-        targets[lang].append(data)
+        targets[lang].append(article)
 
     # Create blog/ directory
     output_dir.mkdir(exist_ok=True)
@@ -81,8 +87,7 @@ def generate_blog(environment, contents_dir, output_dir):
         for article in targets[lang]:
             target = article["target"]
             rendered = blog_template.render(
-                date=article["date"],
-                content=article["content"],
+                article=article,
                 lang_option=True,
                 lang=lang,
                 url_en=f"{target}.html",
