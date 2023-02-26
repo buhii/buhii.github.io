@@ -14,7 +14,7 @@ I'm always surprised by the real-time tweets from many superstars active in mach
 
 ### Mailing Lists
 
-I subscribe to mailing lists such as [The Gradient](https://thegradient.pub/), [The Batch](https://www.deeplearning.ai/the-batch/), or [Weekly Robotics](https://www.weeklyrobotics.com/), which sometimes offer podcasts. I also subscribe to [NIME](https://www.nime.org/list/), which is related to the computer music field.
+I subscribe to mailing lists such as [The Gradient](https://thegradient.pub/), [The Batch](https://www.deeplearning.ai/the-batch/), or [Weekly Robotics](https://www.weeklyrobotics.com/). Some of them also offer podcasts. I also subscribe to [NIME](https://www.nime.org/list/), which is related to the computer music field.
 
 ### Libraries
 
