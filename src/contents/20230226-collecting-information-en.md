@@ -22,4 +22,4 @@ Most of the time, I go to libraries for a change of pace without any particular 
 
 ### Shazam
 
-I often use Shazam to look up songs playing while I walk around town or at restaurants. Since I subscribe to Apple Music, I can easily find most of the hit songs (Shazam is operated by Apple, so that's not surprising).
+I often use Shazam to look up songs playing while I walk around town or at restaurants. Since I subscribe to Apple Music, I can easily find most of the songs (Shazam is operated by Apple, so that's not surprising).
