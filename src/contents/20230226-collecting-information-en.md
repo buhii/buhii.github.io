@@ -6,7 +6,7 @@ In this article, I will share my go-to sources for information gathering. While 
 
 ### [Hacker News](https://news.ycombinator.com/)
 
-Hacker News is a website that I visit almost every day. Since Y Combinator runs it, the majority of the posts are software-related. However, I enjoy reading articles and comments unrelated to my work, such as science-oriented or vintage computing topics. Of course, I have experienced several times that what I found here has helped me in my career.
+Hacker News is a website that I visit almost every day. Since Y Combinator runs it, the majority of the posts are software-related. However, I enjoy reading articles and comments unrelated to my work, such as science-oriented or vintage computing topics. Of course, I have experienced several times that what I learned here has been helpful in my career.
 
 ### Twitter
 
