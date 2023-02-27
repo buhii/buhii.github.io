@@ -1,12 +1,12 @@
-## A Short List of Sources I Use As An Ordinary Engineer
+## A Short List of Sources I Use
 
 In this article, I will share my go-to sources for information gathering. While most of them are software-engineering-related, I will also list miscellaneous ones. I would like to know your similar sources as well.
 
 <!-- more -->
 
-### [Hacker News](https://news.ycombinator.com/)
+### Hacker News
 
-Hacker News is a website that I visit almost every day. Since Y Combinator runs it, the majority of the posts are software-related. However, I enjoy reading articles and comments unrelated to my work, such as science-oriented or vintage computing topics. Of course, I have experienced several times that what I learned here has been helpful in my career.
+[Hacker News](https://news.ycombinator.com/) is a website that I visit every day. Since Y Combinator runs it, the majority of the posts are software-related. However, I enjoy reading articles and comments unrelated to my work, such as science-oriented or vintage computing topics. Of course, I have experienced several times that what I learned here has been helpful in my career.
 
 ### Twitter
 
@@ -18,7 +18,7 @@ I subscribe to mailing lists such as [The Gradient](https://thegradient.pub/), [
 
 ### Libraries
 
-Most of the time, I go to libraries for a change of pace without any particular objective. As a result, I often browse bookshelves that are outside of my specialty and choose books randomly. On the other hand, if I'm searching for a specific text, I usually go to bookstores, including used ones.
+Most of the time, I go to libraries for a change of pace without any particular objective. As a result, I often browse bookshelves that are outside of my specialty and choose books randomly. On the other hand, if I'm searching for a specific text, I usually go to bookstores. I sometimes also go to used ones.
 
 ### Shazam
 

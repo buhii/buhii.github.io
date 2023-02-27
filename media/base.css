@@ -85,6 +85,7 @@ a:hover {
 
 .article-list-date {
     order: 1;
+    font-family: 'Text Me One', sans-serif;
 }
 
 .article-list-title {
@@ -104,6 +105,7 @@ a:hover {
 
 .article-date {
     order: 1;
+    font-family: 'Text Me One', sans-serif;
 }
 
 .article-content {
