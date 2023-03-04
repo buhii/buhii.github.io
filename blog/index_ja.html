@@ -49,17 +49,15 @@
 
   
   <div class="article-container">
-    <span class="article-date"><h2>2023-02-28</h2></span>
+    <span class="article-date"><h2>2023-03-05</h2></span>
     <span class="article-content">
       <h2><a href="depth-clustering_ja.html">点群クラスタリング手法の C++ から Python への移植</a></h2>
-      <p>去年の夏から 3D LiDAR のプロジェクトに携わっており、主にセンサーデータの取り込みや物体検出・追跡アルゴリズムの実装を行った。物体検出では高速・軽量な点群クラスタリング手法である <a href="https://github.com/PRBonn/depth_clustering">Depth Clustering</a> を利用した。動作環境などの都合上、その際に C++ のオリジナル実装から Python に <a href="https://numba.pydata.org/">Numba</a> を利用して移植した。オープンソースでの公開も行ったのでこちらに紹介する。</p>
+      <p>去年の夏から 3D LiDAR のプロジェクトに携わっており、主にセンサーデータの取り込みや物体検出・追跡アルゴリズムの実装を行った。物体検出では高速・軽量な点群クラスタリング手法である <a href="https://github.com/PRBonn/depth_clustering">Depth Clustering</a> を利用した。動作環境などの都合上、その際に C++ のオリジナル実装から Python に <a href="https://numba.pydata.org/">Numba</a> を利用して移植した。GitHub でも公開した:</p>
+<ul>
+<li><a href="https://github.com/uchiyamalab/depth_clustering_py">github.com/uchiyamalab/depth_clustering_py</a></li>
+</ul>
+<p>Numba では LLVM による SIMD 最適化などもしてくれるみたいなので、そのうちベンチマークなども取ってみようと思う。</p>
 
-      
-      <a href="depth-clustering_ja.html">&#x203A;
-      
-        Read more
-      
-      </a>
       
     </span>
   </div>

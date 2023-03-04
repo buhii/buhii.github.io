@@ -49,17 +49,15 @@
 
   
   <div class="article-container">
-    <span class="article-date"><h2>2023-02-28</h2></span>
+    <span class="article-date"><h2>2023-03-05</h2></span>
     <span class="article-content">
       <h2><a href="depth-clustering.html">Porting Point Cloud Clustering from C++ to Python</a></h2>
-      <p>Since last summer, I have been working on a 3D LiDAR project that involves implementing sensor data acquisition, object detection, and tracking algorithms. For object detection, I utilized <a href="https://github.com/PRBonn/depth_clustering">Depth Clustering</a>, a fast and lightweight point cloud clustering algorithm. Due to the constraints of the environments where I needed to run, I ported the algorithm from the original C++ version to Python using <a href="https://numba.pydata.org/">Numba</a>.</p>
+      <p>Since last summer, I have been working on a 3D LiDAR project that involves implementing sensor data acquisition, object detection, and tracking algorithms. For object detection, I utilized <a href="https://github.com/PRBonn/depth_clustering">Depth Clustering</a>, a fast and lightweight point cloud clustering algorithm. Due to the constraints of the environments where I needed to run, I ported the algorithm from the original C++ version to Python using <a href="https://numba.pydata.org/">Numba</a>. I have also published the project to GitHub:</p>
+<ul>
+<li><a href="https://github.com/uchiyamalab/depth_clustering_py">github.com/uchiyamalab/depth_clustering_py</a></li>
+</ul>
+<p>Numba does SIMD optimization with LLVM, so I will try to get some benchmarks in the future.</p>
 
-      
-      <a href="depth-clustering.html">&#x203A;
-      
-        Read more
-        
-      </a>
       
     </span>
   </div>
