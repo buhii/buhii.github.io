@@ -1,6 +1,6 @@
 <div class="introduction">
     <p>
-        Welcome to Takahiro Kamatani's home page. I am an engineer living in Tokyo.
+        Welcome to Takahiro Kamatani's home page. I am a software engineer living in Tokyo.
     </p>
     <p>
         I'm passionate about the intersection of art and technology and have extensive experience working on various new media artworks, including software and hardware components.
