@@ -9,7 +9,7 @@
         Python and <a href="https://cycling74.com/products/max">Max (Cycling '74)</a> are my favorite programming languages. I often enjoy walking around Tokyo and also soldering in my free time.
     </p>
     <p>
-        Don't hesitate to contact me at firstname.lastname@gmail.com, <a href="https://twitter.com/buhii">Twitter</a>, or <a href="https://www.facebook.com/takahiro.kamatani">facebook</a>.
+        Don't hesitate to contact me at firstname.lastname@gmail.com, <a href="https://twitter.com/buhii">X (Twitter)</a>, or <a href="https://www.facebook.com/takahiro.kamatani">facebook</a>.
     </p>
 </div>
 
