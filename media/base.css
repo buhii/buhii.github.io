@@ -1,0 +1,142 @@
+/* ref: https://jgthms.com/web-design-in-4-minutes */
+body {
+  margin: 0 auto;
+  max-width: 50em;
+  font-family: "Helvetica", "Arial", sans-serif;
+
+  line-height: 1.5;
+  padding: 1em 1em;
+}
+
+h1 {
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+}
+
+.publications h2 {
+    margin-top: 2em;
+    margin-bottom: 1em;
+}
+
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: #121212;
+        color: #ccc;
+    }
+    h1 {
+        color: #ccc;
+    }
+    h1 a {
+        color: #ccc;
+    }
+    h1 a:hover {
+        color: #ccc;
+    }
+    .publications h2 {
+        color: #ccc;
+    }
+}
+
+@media (prefers-color-scheme: light) {
+    body {
+        color: #555;
+    }
+    h1 {
+        color: #333;
+    }
+    h1 a {
+        color: #333;
+    }
+    h1 a:hover {
+        color: #333;
+    }
+    .publications h2 {
+        color: #333;
+    }
+}
+
+
+/* ref: https://stackoverflow.com/a/16012979 */
+.blink {
+  animation: blink-animation 1s steps(5, start) infinite;
+  -webkit-animation: blink-animation 1s steps(5, start) infinite;
+}
+@keyframes blink-animation {
+  to {
+    visibility: hidden;
+  }
+}
+@-webkit-keyframes blink-animation {
+  to {
+    visibility: hidden;
+  }
+}
+
+/* some custom styles */
+
+a {
+    color: #6677aa;
+    text-decoration: none !important;
+}
+a:hover {
+    color: #0033df;
+}
+
+.publications li {
+    margin-top: 1em;
+}
+
+.introduction {
+    margin-top: 1em;
+}
+
+.nav {
+    margin-bottom: 3em;
+}
+.nav a + a {
+    margin-left: 1em;
+}
+
+.lang-option {
+    display: flex;
+}
+@media only screen and (min-width: 600px) {
+    .lang-option {
+        float: right;
+        right: 0px;
+    }
+}
+
+.article-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.article-list-date {
+    order: 1;
+    font-family: 'Text Me One', sans-serif;
+}
+
+.article-list-title {
+    order: 2;
+}
+
+@media only screen and (min-width: 600px) {
+    .article-container {
+        display: grid;
+        grid-template-columns: 10em auto;
+    }
+    .article-list-date {
+        order: unset;
+        padding-bottom: unset;
+    }
+}
+
+.article-date {
+    order: 1;
+    font-family: 'Text Me One', sans-serif;
+}
+
+.article-content {
+    order: 2;
+}

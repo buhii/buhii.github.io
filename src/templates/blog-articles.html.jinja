@@ -1,0 +1,28 @@
+{% extends 'base.html.jinja' %}
+
+{% block content %}
+
+<div class="article-list">
+
+  {% for article in articles %}
+  <div class="article-container">
+    <span class="article-date"><h2>{{ article.date|pretty_date }}</h2></span>
+    <span class="article-content">
+      <h2><a href="{{ article.url }}">{{ article.title }}</a></h2>
+      {{ article.short_content }}
+      {% if article.residual %}
+      <a href="{{ article.url }}">&#x203A;
+      {% if lang == 'en' %}
+        Read more
+        {% else %}
+        Read more
+      {% endif %}
+      </a>
+      {% endif %}
+    </span>
+  </div>
+  {% endfor %}
+
+</div>
+
+{% endblock %}

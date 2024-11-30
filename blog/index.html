@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Takahiro Kamatani's Home Page</title>
+
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+
+        <meta name="description" content="Takahiro Kamatani">
+
+        <meta property="og:type" content="website">
+        <meta property="og:title" content="Takahiro Kamatani's Home Page">
+        <meta property="og:description" content="Takahiro Kamatani's Home Page">
+        <meta property="og:site_name" content="Takahiro Kamatani's Home Page">
+        <meta property="og:image" content="https://www.buhii.org/media/ogp.png">
+        <meta property="og:image:width" content="736">
+        <meta property="og:image:height" content="385">
+
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Text+Me+One&display=swap" rel="stylesheet">
+        <link rel="stylesheet" type="text/css" href="/media/base.css">
+        <link rel="icon" type="image/png" href="/favicon.png" />
+
+        <!-- Google tag (gtag.js) -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-C1M3G1THHL"></script>
+        <script>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+
+          gtag('config', 'G-C1M3G1THHL');
+        </script>
+    </head>
+    <body>
+        <h1><a href="/">Takahiro Kamatani's Home Page</a></h1>
+        <div class="nav">
+            
+            <a href="/blog/">Blog</a>
+            
+            <a href="/projects/">Projects</a>
+            <a href="/">About</a>
+            <a href="https://github.com/buhii/">GitHub</a>
+
+            
+            <span class="lang-option">
+                <a href="/blog/index.html">English</a>
+                <a href="/blog/index_ja.html">Japanese</a>
+            </span>
+            
+        </div>
+
+        
+
+<div class="article-list">
+
+  
+  <div class="article-container">
+    <span class="article-date"><h2>2023-03-05</h2></span>
+    <span class="article-content">
+      <h2><a href="depth-clustering.html">Porting Point Cloud Clustering from C++ to Python</a></h2>
+      <p>Since last summer, I have been working on a 3D LiDAR project that involves implementing sensor data acquisition, object detection, and tracking algorithms. For object detection, I used <a href="https://github.com/PRBonn/depth_clustering">Depth Clustering</a>, a fast and lightweight point cloud clustering algorithm. Due to the constraints of the environments where I needed to run, I ported the algorithm from the original C++ version to Python using <a href="https://numba.pydata.org/">Numba</a>. I have also published the project to GitHub:</p>
+<ul>
+<li><a href="https://github.com/uchiyamalab/depth_clustering_py">github.com/uchiyamalab/depth_clustering_py</a></li>
+</ul>
+<p>Numba does SIMD optimization with LLVM, so I will try to get some benchmarks in the future.</p>
+
+      
+    </span>
+  </div>
+  
+  <div class="article-container">
+    <span class="article-date"><h2>2023-02-26</h2></span>
+    <span class="article-content">
+      <h2><a href="collecting-information.html">A Short List of Sources I Use</a></h2>
+      <p>In this article, I will share my go-to sources for information gathering. While most of them are software-engineering-related, I will also list miscellaneous ones. I would like to know your similar sources as well.</p>
+
+      
+      <a href="collecting-information.html">&#x203A;
+      
+        Read more
+        
+      </a>
+      
+    </span>
+  </div>
+  
+  <div class="article-container">
+    <span class="article-date"><h2>2023-02-21</h2></span>
+    <span class="article-content">
+      <h2><a href="moi.html">Hello World</a></h2>
+      <p>I have decided to restart my blog after a few years of absence.</p>
+<p>My old website ran on Google App Engine for about ten years. Because some services are no longer needed and are harder to maintain, I have decided to switch to my boring static site generator. I am considering migrating my old articles, but I will need more time to complete this task.</p>
+<p>I plan to write my articles in both English and Japanese for practice. While writing in English is still challenging, services like Grammarly, DeepL, and ChatGPT have made it much easier. Regardless, I'm sloppy and might stop writing in two languages halfway though.</p>
+<p>I enjoy reading various blogs and hope to write something someone will find engaging.</p>
+
+      
+    </span>
+  </div>
+  
+
+</div>
+
+
+    </body>
+</html>

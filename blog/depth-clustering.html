@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Takahiro Kamatani's Home Page - Porting Point Cloud Clustering from C++ to Python</title>
+
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+
+        <meta name="description" content="Takahiro Kamatani">
+
+        <meta property="og:type" content="website">
+        <meta property="og:title" content="Takahiro Kamatani's Home Page">
+        <meta property="og:description" content="Takahiro Kamatani's Home Page">
+        <meta property="og:site_name" content="Takahiro Kamatani's Home Page">
+        <meta property="og:image" content="https://www.buhii.org/media/ogp.png">
+        <meta property="og:image:width" content="736">
+        <meta property="og:image:height" content="385">
+
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Text+Me+One&display=swap" rel="stylesheet">
+        <link rel="stylesheet" type="text/css" href="/media/base.css">
+        <link rel="icon" type="image/png" href="/favicon.png" />
+
+        <!-- Google tag (gtag.js) -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-C1M3G1THHL"></script>
+        <script>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+
+          gtag('config', 'G-C1M3G1THHL');
+        </script>
+    </head>
+    <body>
+        <h1><a href="/">Takahiro Kamatani's Home Page</a></h1>
+        <div class="nav">
+            
+            <a href="/blog/">Blog</a>
+            
+            <a href="/projects/">Projects</a>
+            <a href="/">About</a>
+            <a href="https://github.com/buhii/">GitHub</a>
+
+            
+            <span class="lang-option">
+                <a href="depth-clustering.html">English</a>
+                <a href="depth-clustering_ja.html">Japanese</a>
+            </span>
+            
+        </div>
+
+        
+
+  <div class="article-container">
+    <span class="article-date"><h2>2023-03-05</h2></span>
+    <span class="article-content">
+      <h2>Porting Point Cloud Clustering from C++ to Python</h2>
+<p>Since last summer, I have been working on a 3D LiDAR project that involves implementing sensor data acquisition, object detection, and tracking algorithms. For object detection, I used <a href="https://github.com/PRBonn/depth_clustering">Depth Clustering</a>, a fast and lightweight point cloud clustering algorithm. Due to the constraints of the environments where I needed to run, I ported the algorithm from the original C++ version to Python using <a href="https://numba.pydata.org/">Numba</a>. I have also published the project to GitHub:</p>
+<ul>
+<li><a href="https://github.com/uchiyamalab/depth_clustering_py">github.com/uchiyamalab/depth_clustering_py</a></li>
+</ul>
+<p>Numba does SIMD optimization with LLVM, so I will try to get some benchmarks in the future.</p>
+
+    </span>
+  </div>
+
+    </body>
+</html>

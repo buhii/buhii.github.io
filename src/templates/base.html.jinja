@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Takahiro Kamatani's Home Page{% block title_additional %}{% endblock %}</title>
+
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+
+        <meta name="description" content="Takahiro Kamatani">
+
+        <meta property="og:type" content="website">
+        <meta property="og:title" content="Takahiro Kamatani's Home Page">
+        <meta property="og:description" content="Takahiro Kamatani's Home Page">
+        <meta property="og:site_name" content="Takahiro Kamatani's Home Page">
+        <meta property="og:image" content="https://www.buhii.org/media/ogp.png">
+        <meta property="og:image:width" content="736">
+        <meta property="og:image:height" content="385">
+
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Text+Me+One&display=swap" rel="stylesheet">
+        <link rel="stylesheet" type="text/css" href="/media/base.css">
+        <link rel="icon" type="image/png" href="/favicon.png" />
+
+        <!-- Google tag (gtag.js) -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-C1M3G1THHL"></script>
+        <script>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+
+          gtag('config', 'G-C1M3G1THHL');
+        </script>
+    </head>
+    <body>
+        <h1><a href="/">Takahiro Kamatani's Home Page</a></h1>
+        <div class="nav">
+            {% if lang == 'ja' %}
+            <a href="/blog/index_ja.html">Blog</a>
+            {% else %}
+            <a href="/blog/">Blog</a>
+            {% endif %}
+            <a href="/projects/">Projects</a>
+            <a href="/">About</a>
+            <a href="https://github.com/buhii/">GitHub</a>
+
+            {% if lang_option %}
+            <span class="lang-option">
+                <a href="{{ url_en }}">English</a>
+                <a href="{{ url_ja }}">Japanese</a>
+            </span>
+            {% endif %}
+        </div>
+
+        {% block content required %}{% endblock %}
+    </body>
+</html>

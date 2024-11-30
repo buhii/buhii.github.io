@@ -1,0 +1,13 @@
+{% extends 'base.html.jinja' %}
+
+{% block title_additional %} - {{ article.title }}{% endblock %}
+
+{% block content %}
+
+  <div class="article-container">
+    <span class="article-date"><h2>{{ article.date|pretty_date }}</h2></span>
+    <span class="article-content">
+      {{ article.content }}
+    </span>
+  </div>
+{% endblock %}
