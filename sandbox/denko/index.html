@@ -198,7 +198,7 @@
                         問題の種類:
                         <select id="quiz-type">
                             <option value="wire-size">電線サイズと許容電流</option>
-                            <option value="ring-sleeve">圧着リングスリーブの本数</option>
+                            <option value="ring-sleeve">リングスリーブ圧着マーク</option>
                             <option value="all">すべて</option>
                         </select>
                     </label>
@@ -308,19 +308,80 @@
                     </tr>
                 </table>
 
-                <h2>圧着リングスリーブの本数</h2>
+                <h2>圧着リングスリーブのサイズとマーク</h2>
                 <table>
                     <tr>
-                        <th>電線の種類</th>
+                        <th>1.6mm</th>
+                        <th>2.0mm</th>
                         <th>サイズ</th>
-                        <th>...</th>
+                        <th>マーク</th>
                     </tr>
                     <tr>
-                        <td>...</td>
-                        <td>...</td>
-                        <td>...</td>
+                        <td>2本</td>
+                        <td>0本</td>
+                        <td>小</td>
+                        <td>◯</td>
+                    </tr>
+                    <tr>
+                        <td>3〜4本</td>
+                        <td>0本</td>
+                        <td>小</td>
+                        <td>小</td>
+                    </tr>
+                    <tr>
+                        <td>1〜2本</td>
+                        <td>1本</td>
+                        <td>小</td>
+                        <td>小</td>
+                    </tr>
+                    <tr>
+                        <td>0本</td>
+                        <td>2本</td>
+                        <td>小</td>
+                        <td>小</td>
+                    </tr>
+                    <tr>
+                        <td>1〜3本</td>
+                        <td>2本</td>
+                        <td>中</td>
+                        <td>中</td>
+                    </tr>
+                    <tr>
+                        <td>3〜5本</td>
+                        <td>1本</td>
+                        <td>中</td>
+                        <td>中</td>
+                    </tr>
+                    <tr>
+                        <td>1本</td>
+                        <td>3本</td>
+                        <td>中</td>
+                        <td>中</td>
                     </tr>
                 </table>
+                <p>
+                    <b>マーク早見表</b> (<a href="https://www.youtube.com/watch?v=On_KDBGAxws">第二種電気工事士試験　リングスリーブ　圧着マークの覚え方</a>)<br/>
+                    ☆ 1.6 mm = 1 点<br/>
+                    ☆ 2.0 mm = 2 点<br/><br/>
+                    <table>
+                        <tr>
+                            <th>合計</th>
+                            <th>マーク</th>
+                        </tr>
+                        <tr>
+                            <td>2 点</td>
+                            <td>◯</td>
+                        </tr>
+                        <tr>
+                            <td>3-4 点</td>
+                            <td>小</td>
+                        </tr>
+                        <tr>
+                            <td>5 点 ~</td>
+                            <td>中</td>
+                        </tr>
+                    </table>
+                </p>
             </div>
         </div>
     </div>
@@ -338,8 +399,26 @@
              'より線_5.5mm²': '49A'
          },
          'ring-sleeve': {
-             // 圧着リングスリーブの本数関連の問題
-             '..._2.0mm^2': '...',
+             // 圧着リングスリーブのマーク関連の問題（範囲を個別に分解）
+             '2本_1.6mm+0本_2.0mm': 'サイズ:小, マーク:◯',
+
+             '3本_1.6mm+0本_2.0mm': 'サイズ:小, マーク:小',
+             '4本_1.6mm+0本_2.0mm': 'サイズ:小, マーク:小',
+
+             '1本_1.6mm+1本_2.0mm': 'サイズ:小, マーク:小',
+             '2本_1.6mm+1本_2.0mm': 'サイズ:小, マーク:小',
+
+             '0本_1.6mm+2本_2.0mm': 'サイズ:小, マーク:小',
+
+             '1本_1.6mm+2本_2.0mm': 'サイズ:中, マーク:中',
+             '2本_1.6mm+2本_2.0mm': 'サイズ:中, マーク:中',
+             '3本_1.6mm+2本_2.0mm': 'サイズ:中, マーク:中',
+
+             '3本_1.6mm+1本_2.0mm': 'サイズ:中, マーク:中',
+             '4本_1.6mm+1本_2.0mm': 'サイズ:中, マーク:中',
+             '5本_1.6mm+1本_2.0mm': 'サイズ:中, マーク:中',
+
+             '1本_1.6mm+3本_2.0mm': 'サイズ:中, マーク:中'
          }
      };
 
@@ -467,9 +546,8 @@
                  const [wireType, size] = question.key.split('_');
                  questionStr = `${wireType}${size}の許容電流は？`;
              } else {
-                 const [wireType, size] = question.key.split('_');
-                 questionStr = `${wireType}${size}をリングスリーブで圧着する場合の本数は？`;
-             }
+                 // リングスリーブの問題文
+                 questionStr = `${question.key}の圧着リングスリーブのサイズとマークの組み合わせは？`;          }
 
              questionText.textContent = questionStr;
 
@@ -499,6 +577,7 @@
          }
      }
 
+
      // 選択肢の生成
      function generateOptions(question) {
          optionsContainer.innerHTML = '';
@@ -519,14 +598,21 @@
                  options.push(randomCurrent);
              }
          } else {
-             // リングスリーブの本数の場合の不正解選択肢
-             const otherCounts = ['1本', '2本', '3本', '4本'];
+             // リングスリーブのサイズとマークの組み合わせの場合の不正解選択肢
+             const otherOptions = [
+                 'サイズ:小, マーク:◯',
+                 'サイズ:小, マーク:小',
+                 'サイズ:小, マーク:中',
+                 'サイズ:中, マーク:小',
+                 'サイズ:中, マーク:中'
+             ];
+
              for (let i = 0; i < 3; i++) {
-                 let randomCount;
+                 let randomOption;
                  do {
-                     randomCount = otherCounts[Math.floor(Math.random() * otherCounts.length)];
-                 } while (options.includes(randomCount));
-                 options.push(randomCount);
+                     randomOption = otherOptions[Math.floor(Math.random() * otherOptions.length)];
+                 } while (options.includes(randomOption));
+                 options.push(randomOption);
              }
          }
 
