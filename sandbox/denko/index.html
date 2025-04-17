@@ -292,6 +292,11 @@
                         <td>48A</td>
                     </tr>
                     <tr>
+                        <td>単線</td>
+                        <td>3.2mm</td>
+                        <td>68A</td>
+                    </tr>
+                    <tr>
                         <td>より線</td>
                         <td>2mm²</td>
                         <td>27A</td>
@@ -305,6 +310,11 @@
                         <td>より線</td>
                         <td>5.5mm²</td>
                         <td>49A</td>
+                    </tr>
+                    <tr>
+                        <td>より線</td>
+                        <td>8mm²</td>
+                        <td>61A</td>
                     </tr>
                 </table>
 
@@ -394,9 +404,11 @@
              '単線_1.6mm': '27A',
              '単線_2.0mm': '35A',
              '単線_2.6mm': '48A',
+             '単線_3.2mm': '68A',
              'より線_2mm²': '27A',
              'より線_3.5mm²': '37A',
-             'より線_5.5mm²': '49A'
+             'より線_5.5mm²': '49A',
+             'より線_8mm²': '61A',
          },
          'ring-sleeve': {
              // 圧着リングスリーブのマーク関連の問題（範囲を個別に分解）
@@ -589,7 +601,7 @@
          // 不正解の選択肢を生成
          if (question.type === 'wire-size') {
              // 許容電流の場合の不正解選択肢
-             const otherCurrents = ['17A', '27A', '35A', '37A', '48A', '49A', '60A'];
+             const otherCurrents = ['17A', '27A', '35A', '37A', '48A', '49A', '60A', '61A', '68A'];
              for (let i = 0; i < 3; i++) {
                  let randomCurrent;
                  do {
