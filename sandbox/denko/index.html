@@ -199,6 +199,9 @@
                         <select id="quiz-type">
                             <option value="wire-size">電線サイズと許容電流</option>
                             <option value="ring-sleeve">リングスリーブ圧着マーク</option>
+                            <option value="cable-type">記号→ケーブル名称</option>
+                            <option value="cable-heat">ケーブル名称→耐熱温度</option>
+                            <option value="conduit-type">電線管の種類</option>
                             <option value="all">すべて</option>
                         </select>
                     </label>
@@ -369,29 +372,105 @@
                         <td>中</td>
                     </tr>
                 </table>
+
+                <h2>ケーブルの記号と耐熱温度</h2>
+                <table>
+                    <tr>
+                        <th>記号</th>
+                        <th>名称</th>
+                        <th>耐熱温度</th>
+                    </tr>
+                    <tr>
+                        <td>VVF</td>
+                        <td>600Vビニル絶縁シースケーブル(平形)</td>
+                        <td>60°C</td>
+                    </tr>
+                    <tr>
+                        <td>VVR</td>
+                        <td>600Vビニル絶縁シースケーブル(丸形)</td>
+                        <td>60°C</td>
+                    </tr>
+                    <tr>
+                        <td>EM-EEF</td>
+                        <td>EM-EEFケーブル</td>
+                        <td>75°C</td>
+                    </tr>
+                    <tr>
+                        <td>CV</td>
+                        <td>600V架橋ポリエチレン絶縁ビニルシースケーブル</td>
+                        <td>90°C</td>
+                    </tr>
+                    <tr>
+                        <td>MI</td>
+                        <td>MIケーブル</td>
+                        <td>250°C</td>
+                    </tr>
+                    <tr>
+                        <td>CT</td>
+                        <td>キャブタイヤケーブル</td>
+                        <td>―</td>
+                    </tr>
+                </table>
+
+                <h2>電線管の記号と種類</h2>
+                <table>
+                    <tr>
+                        <th>記号</th>
+                        <th>電線管の種類</th>
+                    </tr>
+                    <tr>
+                        <td>なし</td>
+                        <td>薄鋼電線管</td>
+                    </tr>
+                    <tr>
+                        <td>E</td>
+                        <td>ねじなし電線管</td>
+                    </tr>
+                    <tr>
+                        <td>F2</td>
+                        <td>2種金属製可とう電線管</td>
+                    </tr>
+                    <tr>
+                        <td>PF</td>
+                        <td>合成樹脂製可とう電線管</td>
+                    </tr>
+                    <tr>
+                        <td>FEP</td>
+                        <td>波付硬質合成樹脂管</td>
+                    </tr>
+                    <tr>
+                        <td>VE</td>
+                        <td>硬質塩化ビニル電線管</td>
+                    </tr>
+                    <tr>
+                        <td>HIVE</td>
+                        <td>耐衝撃性硬質塩化ビニル電線管</td>
+                    </tr>
+                </table>
+
                 <p>
                     <b>マーク早見表</b> (<a href="https://www.youtube.com/watch?v=On_KDBGAxws">第二種電気工事士試験　リングスリーブ　圧着マークの覚え方</a>)<br/>
                     ☆ 1.6 mm = 1 点<br/>
                     ☆ 2.0 mm = 2 点<br/><br/>
-                    <table>
-                        <tr>
-                            <th>合計</th>
-                            <th>マーク</th>
-                        </tr>
-                        <tr>
-                            <td>2 点</td>
-                            <td>◯</td>
-                        </tr>
-                        <tr>
-                            <td>3-4 点</td>
-                            <td>小</td>
-                        </tr>
-                        <tr>
-                            <td>5 点 ~</td>
-                            <td>中</td>
-                        </tr>
-                    </table>
                 </p>
+                <table>
+                    <tr>
+                        <th>合計</th>
+                        <th>マーク</th>
+                    </tr>
+                    <tr>
+                        <td>2 点</td>
+                        <td>◯</td>
+                    </tr>
+                    <tr>
+                        <td>3-4 点</td>
+                        <td>小</td>
+                    </tr>
+                    <tr>
+                        <td>5 点 ~</td>
+                        <td>中</td>
+                    </tr>
+                </table>
             </div>
         </div>
     </div>
@@ -431,7 +510,35 @@
              '5本_1.6mm+1本_2.0mm': 'サイズ:中, マーク:中',
 
              '1本_1.6mm+3本_2.0mm': 'サイズ:中, マーク:中'
-         }
+         },
+         // ① 記号 → ケーブル名称
+         'cable-type': {
+             'VVF': '600Vビニル絶縁シースケーブル(平形)',
+             'VVR': '600Vビニル絶縁シースケーブル(丸形)',
+             'EM-EEF': 'EM-EEFケーブル',
+             'CV': '600V架橋ポリエチレン絶縁ビニルシースケーブル',
+             'MI': 'MIケーブル',
+             'CT': 'キャブタイヤケーブル'
+         },
+         // ② ケーブル名称 → 耐熱温度
+         'cable-heat': {
+             '600Vビニル絶縁シースケーブル(平形)': '60°C',
+             '600Vビニル絶縁シースケーブル(丸形)': '60°C',
+             'EM-EEFケーブル': '75°C',
+             '600V架橋ポリエチレン絶縁ビニルシースケーブル': '90°C',
+             'MIケーブル': '250°C',
+             'キャブタイヤケーブル': '―'
+         },
+         // ③ 電線管記号 → 種類
+         'conduit-type': {
+             '(電線管記号なし)':  '薄鋼電線管',
+             'E':    'ねじなし電線管',
+             'F2':   '2種金属製可とう電線管',
+             'PF':   '合成樹脂製可とう電線管',
+             'FEP':  '波付硬質合成樹脂管',
+             'VE':   '硬質塩化ビニル電線管',
+             'HIVE': '耐衝撃性硬質塩化ビニル電線管'
+         },
      };
 
      // 変数初期化
@@ -518,6 +625,19 @@
              allKeys = allKeys.concat(Object.keys(quizData['ring-sleeve']));
          }
 
+         // ① 記号→ケーブル名称
+         if (type === 'all' || type === 'cable-type') {
+             allKeys = allKeys.concat(Object.keys(quizData['cable-type']));
+         }
+         // ② ケーブル名称→耐熱温度
+         if (type === 'all' || type === 'cable-heat') {
+             allKeys = allKeys.concat(Object.keys(quizData['cable-heat']));
+         }
+         // ③ 電線管の種類
+         if (type === 'all' || type === 'conduit-type') {
+             allKeys = allKeys.concat(Object.keys(quizData['conduit-type']));
+         }
+
          // ランダムに問題を選択
          shuffleArray(allKeys);
 
@@ -526,19 +646,28 @@
 
          for (let i = 0; i < finalCount; i++) {
              const key = allKeys[i];
-             let type, answer;
+             let category, answer;
 
              if (quizData['wire-size'][key]) {
-                 type = 'wire-size';
+                 category = 'wire-size';
                  answer = quizData['wire-size'][key];
-             } else {
-                 type = 'ring-sleeve';
+             } else if (quizData['ring-sleeve'][key]) {
+                 category = 'ring-sleeve';
                  answer = quizData['ring-sleeve'][key];
+             } else if (quizData['cable-type'][key]) {
+                 category = 'cable-type';
+                 answer = quizData['cable-type'][key];
+             } else if (quizData['cable-heat'][key]) {
+                 category = 'cable-heat';
+                 answer = quizData['cable-heat'][key];
+             } else {
+                 category = 'conduit-type';
+                 answer = quizData['conduit-type'][key];
              }
 
              currentQuestions.push({
                  key: key,
-                 type: type,
+                 type: category,
                  answer: answer
              });
          }
@@ -549,44 +678,54 @@
 
      // 問題の表示
      function displayQuestion() {
-         if (currentIndex < currentQuestions.length) {
-             const question = currentQuestions[currentIndex];
-             let questionStr = '';
-
-             // 問題文の作成
-             if (question.type === 'wire-size') {
-                 const [wireType, size] = question.key.split('_');
-                 questionStr = `${wireType}${size}の許容電流は？`;
-             } else {
-                 // リングスリーブの問題文
-                 questionStr = `${question.key}の圧着リングスリーブのサイズとマークの組み合わせは？`;          }
-
-             questionText.textContent = questionStr;
-
-             // 選択肢の生成
-             generateOptions(question);
-
-             // 統計情報の更新
-             currentQuestionEl.textContent = currentIndex + 1;
-             totalQuestionsEl.textContent = currentQuestions.length;
-
-             // 進捗バーの更新
-             const progress = ((currentIndex) / currentQuestions.length) * 100;
-             progressBar.style.width = `${progress}%`;
-
-             // ボタンの状態をリセット
-             checkButton.disabled = true;
-             nextButton.disabled = true;
-
-             // 結果表示をリセット
-             resultBox.style.display = 'none';
-
-             // 選択状態をリセット
-             selectedAnswer = null;
-         } else {
-             // クイズ終了
+         if (currentIndex >= currentQuestions.length) {
              showResults();
+             return;
          }
+         const q = currentQuestions[currentIndex];
+         let str = '';
+
+         switch (q.type) {
+             case 'wire-size':
+                 const [w, size] = q.key.split('_');
+                 str = `${w}${size} の許容電流は？`;
+                 break;
+             case 'ring-sleeve':
+                 str = `${q.key} の圧着リングスリーブのサイズとマークは？`;
+                 break;
+             case 'cable-type':
+                 str = `${q.key} のケーブル名称は？`;
+                 break;
+             case 'cable-heat':
+                 str = `${q.key} の耐熱温度は？`;
+                 break;
+             case 'conduit-type':
+                 str = `${q.key} の電線管の種類は？`;
+                 break;
+         }
+
+         questionText.textContent = str;
+
+         // 選択肢の生成
+         generateOptions(q);
+
+         // 統計情報の更新
+         currentQuestionEl.textContent = currentIndex + 1;
+         totalQuestionsEl.textContent = currentQuestions.length;
+
+         // 進捗バーの更新
+         const progress = ((currentIndex) / currentQuestions.length) * 100;
+         progressBar.style.width = `${progress}%`;
+
+         // ボタンの状態をリセット
+         checkButton.disabled = true;
+         nextButton.disabled = true;
+
+         // 結果表示をリセット
+         resultBox.style.display = 'none';
+
+         // 選択状態をリセット
+         selectedAnswer = null;
      }
 
 
@@ -609,7 +748,7 @@
                  } while (options.includes(randomCurrent));
                  options.push(randomCurrent);
              }
-         } else {
+         } else if (question.type === 'ring-sleeve') {
              // リングスリーブのサイズとマークの組み合わせの場合の不正解選択肢
              const otherOptions = [
                  'サイズ:小, マーク:◯',
@@ -626,6 +765,18 @@
                  } while (options.includes(randomOption));
                  options.push(randomOption);
              }
+         } else if (question.type === 'cable-type') {
+             const pool = Object.values(quizData['cable-type']).filter(v => v !== question.answer);
+             shuffleArray(pool);
+             options.push(...pool.slice(0, 3));
+         } else if (question.type === 'cable-heat') {
+             const pool = Object.values(quizData['cable-heat']).filter(v => v !== question.answer);
+             shuffleArray(pool);
+             options.push(...pool.slice(0, 3));
+         } else if (question.type === 'conduit-type') {
+             const pool = Object.values(quizData['conduit-type']).filter(v => v !== question.answer);
+             shuffleArray(pool);
+             options.push(...pool.slice(0, 3));
          }
 
          // 選択肢をシャッフル
