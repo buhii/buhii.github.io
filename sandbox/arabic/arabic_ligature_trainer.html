@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Arabic Ligature Trainer – HTML教材</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: #121a2b;
+      --ink: #eaf2ff;
+      --muted: #a9b5d0;
+      --brand: #6fb1ff;
+      --accent: #84ffcf;
+      --danger: #ff8aa1;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 24px; color: var(--ink); background: radial-gradient(1200px 800px at 20% -10%, #14203a, var(--bg));
+      font: 16px/1.6 system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", Arial, sans-serif;
+    }
+    h1 { font-size: 28px; margin: 0 0 8px; letter-spacing: .3px; }
+    .sub { color: var(--muted); margin-bottom: 24px; }
+
+    .tabs { display: grid; grid-template-columns: 220px 1fr; gap: 16px; align-items: start; }
+    .menu {
+      position: sticky; top: 16px; display: flex; flex-direction: column; gap: 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,0));
+      border: 1px solid rgba(255,255,255,.08); border-radius: 16px; padding: 10px;
+    }
+    .menu button {
+      appearance: none; border: 0; text-align: left; padding: 10px 12px; border-radius: 12px; cursor: pointer;
+      background: transparent; color: var(--ink);
+    }
+    .menu button.active { background: rgba(111,177,255,.14); outline: 1px solid rgba(111,177,255,.45); }
+
+    .panel {
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border: 1px solid rgba(255,255,255,.08); border-radius: 18px; padding: 18px; box-shadow: 0 10px 30px rgba(0,0,0,.3);
+    }
+    .panel h2 { margin: 4px 0 12px; font-size: 22px; }
+    .panel p { color: var(--muted); }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-top: 12px; }
+    .card { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 10px; }
+    .badge { font-size: 12px; color: var(--muted); }
+
+    .arabic {
+      font-size: 40px; line-height: 1.4; text-align: center; direction: rtl; unicode-bidi: bidi-override;
+      font-family: "Noto Naskh Arabic", "Amiri", "Scheherazade", "Segoe UI", Arial, system-ui, sans-serif;
+    }
+    .arabic.small { font-size: 28px; }
+
+    .samples { display: grid; grid-template-columns: repeat(4, minmax(120px, 1fr)); gap: 6px; margin-top: 8px; }
+    .samples .chunk { padding: 8px; border-radius: 12px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); }
+    .samples .label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; text-align: center; }
+
+    .row { display: flex; gap: 8px; align-items: center; }
+    input[type="text"], textarea, select {
+      width: 100%; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12); color: var(--ink);
+      padding: 10px 12px; border-radius: 12px; outline: none;
+    }
+    .btn {
+      appearance: none; border: 0; background: linear-gradient(180deg, rgba(111,177,255,.9), rgba(111,177,255,.6));
+      color: #0b1529; font-weight: 700; padding: 10px 14px; border-radius: 12px; cursor: pointer; box-shadow: 0 6px 16px rgba(111,177,255,.3);
+    }
+    .btn.ghost { background: rgba(255,255,255,.06); color: var(--ink); box-shadow: none; border: 1px solid rgba(255,255,255,.1); }
+
+    .pill { padding: 2px 8px; border-radius: 999px; font-size: 12px; background: rgba(132,255,207,.12); color: var(--accent); border: 1px solid rgba(132,255,207,.4); }
+
+    .decompose { display: grid; gap: 8px; margin-top: 10px; }
+    .glyph { display: inline-flex; flex-direction: column; align-items: center; gap: 3px; margin: 6px; padding: 6px 8px; border-radius: 8px; border: 1px dashed rgba(255,255,255,.2); }
+    .glyph .code { font-size: 12px; color: var(--muted); }
+
+    .helper { font-size: 13px; color: var(--muted); }
+    .hl-break { color: var(--danger); }
+
+    .quiz { display: grid; gap: 12px; grid-template-columns: 1fr; align-items: start; }
+    .quiz .question { text-align: center; font-size: 56px; direction: rtl; unicode-bidi: bidi-override; margin-top: 6px; }
+    .choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+    .choices button { padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.04); color: var(--ink); cursor: pointer; }
+    .choices button.correct { outline: 2px solid rgba(132,255,207,.6); }
+    .choices button.wrong { outline: 2px solid rgba(255,138,161,.7); }
+
+    .spot { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: center; margin-top: 6px; }
+    .spot .big { font-size: 64px; direction: rtl; unicode-bidi: bidi-override; text-align: center; }
+    .spot .explain { color: var(--muted); }
+
+    footer { margin-top: 28px; color: var(--muted); font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h1>Arabic Ligature Trainer</h1>
+  <div class="sub">アラビア文字の連結（ligature）で形が変わる仕組みを、視覚的に・対話的に学べるHTML教材です。各タブで「字形の4形」「分解表示」「クイズ」「特殊合字」を練習できます。</div>
+
+  <div class="tabs">
+    <nav class="menu" aria-label="Sections">
+      <button class="active" data-tab="alphabet">① アルファベット & 連結</button>
+      <button data-tab="type">② 入力して分解</button>
+      <button data-tab="quiz">③ 形当てクイズ</button>
+      <button data-tab="ligature">④ 合字スポットライト</button>
+    </nav>
+
+    <section id="alphabet" class="panel" role="region" aria-labelledby="alphabet-title">
+      <h2 id="alphabet-title">アルファベット & 連結（4つの字形 / Four contextual forms）</h2>
+      <p>
+        アラビア文字は前後の文字との <strong>連結可否 / Joining behavior</strong> により、
+        <span class="pill">孤立形 / Isolated</span>・
+        <span class="pill">語頭形 / Initial</span>・
+        <span class="pill">語中形 / Medial</span>・
+        <span class="pill">語末形 / Final</span> に変化します。下の一覧から文字をクリックすると、4形と連結タイプ（<em>両連結 / Dual-joining</em>・<em>右連結のみ / Right-joining only</em>）が表示されます。
+      </p>
+      <div class="grid" id="letterGrid" aria-live="polite"></div>
+      <div id="letterDetail" class="card" style="margin-top:12px; display:none"></div>
+    </section>
+
+    <section id="type" class="panel" style="display:none" role="region" aria-labelledby="type-title">
+      <h2 id="type-title">入力して分解（境界を“見える化” / Decompose & visualize joins）</h2>
+      <p>アラビア語の単語を入力すると、通常表示と <strong>分解表示 / Decomposed</strong>（1文字ずつの枠・U+コード・連結タイプ）を表示します。連結が<strong>切れる位置 / Break points</strong>は <span class="hl-break">赤</span> で示します。</p>
+      <div class="row" style="flex-wrap:wrap">
+        <input id="arabicInput" type="text" placeholder="ここにアラビア語を入力（例: العربية أو كتاب）" aria-label="Arabic input" />
+        <button class="btn" id="speakBtn" title="読み上げ">🔊 読み上げ</button>
+        <button class="btn ghost" id="spellBtn" title="1文字ずつ読む">🔠 一文字ずつ</button>
+        <button class="btn ghost" id="repeatHardBtn" title="難読箇所（語中形）を繰り返す">🎯 難読箇所リピート</button>
+      </div>
+      <div class="row" style="flex-wrap:wrap">
+        <select id="voiceSelect" aria-label="Voice select" style="max-width:280px"></select>
+        <label class="helper">速度 / Rate <input type="range" id="rateRange" min="0.4" max="1.4" step="0.05" value="0.9"/></label>
+        <label class="helper">高さ / Pitch <input type="range" id="pitchRange" min="0.6" max="1.4" step="0.05" value="1.0"/></label>
+      </div>
+      <div class="decompose">
+        <div><div class="badge">通常表示 / Normal</div><div id="renderNormal" class="arabic"></div></div>
+        <div>
+          <div class="badge">分解表示（1字ごと） / Decomposed</div>
+          <div id="renderBoxes" class="arabic small" style="text-align:left; direction:ltr"></div>
+          <div class="helper" id="joinReport"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="quiz" class="panel" style="display:none" role="region" aria-labelledby="quiz-title">
+      <h2 id="quiz-title">形当てクイズ（語頭・語中・語末 / Initial · Medial · Final）</h2>
+      <p>表示された <strong>連結中の形</strong> が、どの基本文字に対応するか当ててください。練習に最適な <em>両連結 / Dual-joining</em> の文字から出題します。</p>
+      <div class="quiz">
+        <div class="badge">問題 / Question</div>
+        <div id="quizQ" class="question">ــبــ</div>
+        <div class="choices" id="quizChoices"></div>
+        <div class="row">
+          <button class="btn" id="nextQuiz">次の問題 / Next</button>
+          <div id="quizInfo" class="helper"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="ligature" class="panel" style="display:none" role="region" aria-labelledby="ligature-title">
+      <h2 id="ligature-title">合字スポットライト：لا（ラーム+アリフ） / Ligature Spotlight: لا (lam + alif)</h2>
+      <div class="spot">
+        <div>
+          <div class="badge">合字 / Ligature</div>
+          <div class="big">لا</div>
+        </div>
+        <div class="explain">
+          <p><strong>ل</strong>（Lām）と <strong>ا</strong>（Alif）が続くと、しばしば 1 文字のような合字 <strong>لا</strong> として組まれます（見た目は1字でも <em>実際は2文字</em>）。</p>
+          <div class="arabic small" style="text-align:center">ل + ا → لا</div>
+          <p>英語表記 / English: <em>lam–alif ligature</em>. 分解表示で <strong>境界 / boundary</strong> を確認しましょう。</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    Tips: 非連結（左に繋がらない）文字 / right-joining only: <span class="arabic small" title="右連結のみ / Right-joining only">ا د ذ ر ز و</span>。これらの直後で連結が切れます / break occurs right after these.
+  </footer>
+
+  <script>
+   // === データ定義 ===
+   const RIGHT_JOIN_ONLY = new Set(["ا","د","ذ","ر","ز","و"]); // 左側に連結しない / Right-joining only
+   const LETTERS = [
+       {ch:"ا", name:"Alif"}, {ch:"ب", name:"Ba"}, {ch:"ت", name:"Ta"}, {ch:"ث", name:"Tha"},
+       {ch:"ج", name:"Jim"}, {ch:"ح", name:"Ha"}, {ch:"خ", name:"Kha"}, {ch:"د", name:"Dal"},
+       {ch:"ذ", name:"Dhal"}, {ch:"ر", name:"Ra"}, {ch:"ز", name:"Zay"}, {ch:"س", name:"Sin"},
+       {ch:"ش", name:"Shin"}, {ch:"ص", name:"Sad"}, {ch:"ض", name:"Dad"}, {ch:"ط", name:"Ta (emph.)"},
+       {ch:"ظ", name:"Za (emph.)"}, {ch:"ع", name:"Ayn"}, {ch:"غ", name:"Ghayn"}, {ch:"ف", name:"Fa"},
+       {ch:"ق", name:"Qaf"}, {ch:"ك", name:"Kaf"}, {ch:"ل", name:"Lam"}, {ch:"م", name:"Mim"},
+       {ch:"ن", name:"Nun"}, {ch:"ه", name:"Ha (Heh)"}, {ch:"و", name:"Waw"}, {ch:"ي", name:"Ya"},
+   ];
+   function joinType(ch){ return RIGHT_JOIN_ONLY.has(ch) ? "右連結のみ / Right-joining only" : "両連結 / Dual-joining"; }
+
+   // 連結サンプル生成（実際のタトウィール文字を使用）
+   const TATWEEL = "ـ";
+   function samples(ch){
+       const isRightOnly = RIGHT_JOIN_ONLY.has(ch);
+       return {
+           iso: ch,
+           ini: ch + TATWEEL, // 語頭 / Initial
+               med: isRightOnly ? ch : TATWEEL + ch + TATWEEL, // 語中 / Medial
+               fin: TATWEEL + ch, // 語末 / Final
+               note: isRightOnly ? "※ この文字は左側に連結しません / does not join to the following letter (left)" : ""
+       };
+   }
+
+   // === UI: タブ ===
+   const tabs = document.querySelectorAll('.menu button');
+   const sections = {
+       alphabet: document.getElementById('alphabet'),
+       type: document.getElementById('type'),
+       quiz: document.getElementById('quiz'),
+       ligature: document.getElementById('ligature'),
+   };
+   tabs.forEach(b=>b.addEventListener('click',()=>{
+       tabs.forEach(x=>x.classList.remove('active'));
+       b.classList.add('active');
+       const key = b.dataset.tab;
+       Object.entries(sections).forEach(([k,el])=> el.style.display = (k===key? 'block':'none'));
+   }));
+
+   // === アルファベット一覧 ===
+   const grid = document.getElementById('letterGrid');
+   const detail = document.getElementById('letterDetail');
+   function renderGrid(){
+       grid.innerHTML = '';
+       LETTERS.forEach((L)=>{
+           const card = document.createElement('button');
+           card.className = 'card'; card.style.cursor='pointer';
+           card.innerHTML = `
+          <div class="badge">${L.name}</div>
+          <div class="arabic">${L.ch}</div>
+           `;
+           card.addEventListener('click', ()=> showDetail(L));
+           grid.appendChild(card);
+       });
+   }
+   function showDetail(L){
+       const s = samples(L.ch);
+       detail.style.display='block';
+       detail.innerHTML = `
+        <div class="row" style="justify-content:space-between; align-items:flex-end">
+          <div>
+            <div class="badge">選択中 / Selected</div>
+            <div class="arabic">${L.ch}</div>
+          </div>
+          <div class="helper">名称 / Name: <strong>${L.name}</strong> ／ 連結タイプ / Joining type: <strong>${joinType(L.ch)}</strong></div>
+        </div>
+        ${s.note? `<div class="helper" style="margin-top:6px">${s.note}</div>`: ''}
+        <div class="samples">
+          <div class="chunk"><span class="label">孤立形 / Isolated</span><div class="arabic">${s.iso}</div></div>
+          <div class="chunk"><span class="label">語頭形 / Initial</span><div class="arabic">${s.ini}</div></div>
+          <div class="chunk"><span class="label">語中形 / Medial</span><div class="arabic">${s.med}</div></div>
+          <div class="chunk"><span class="label">語末形 / Final</span><div class="arabic">${s.fin}</div></div>
+        </div>
+        `;
+   }
+   renderGrid();
+
+   // === 入力して分解 ===
+   const input = document.getElementById('arabicInput');
+   const normal = document.getElementById('renderNormal');
+   const boxes = document.getElementById('renderBoxes');
+   const joinReport = document.getElementById('joinReport');
+
+   const NAME_BY_CHAR = Object.fromEntries(LETTERS.map(L=>[L.ch, L.name]));
+   function toCode(u){ return 'U+' + u.codePointAt(0).toString(16).toUpperCase().padStart(4,'0'); }
+
+   function analyze(str){
+       const chars = Array.from(str);
+       normal.textContent = str;
+
+       boxes.innerHTML = '';
+       const breaks = [];
+       for (let i=0; i<chars.length; i++){
+           const ch = chars[i];
+           const span = document.createElement('span');
+           span.className = 'glyph';
+           span.innerHTML = `<div class="arabic small" style="margin:0;">${ch === ' ' ? '␠' : ch}</div><div class="code">${ch === ' ' ? 'SPACE' : toCode(ch)} ${NAME_BY_CHAR[ch] ? '('+NAME_BY_CHAR[ch]+')':''}</div>`;
+           boxes.appendChild(span);
+
+           if (ch === ' ') { breaks.push(i); continue; }
+           const next = chars[i+1];
+           const thisRightOnly = RIGHT_JOIN_ONLY.has(ch);
+           const nextExists = !!next && next !== ' ';
+           const nextJoinableRight = nextExists && !RIGHT_JOIN_ONLY.has(next);
+           const willJoin = !thisRightOnly && nextJoinableRight;
+           if (!willJoin && nextExists){ breaks.push(i); }
+       }
+       // セグメント（連結が切れない連続領域）と語中インデックスの推定
+       const segments = [];
+       let start = 0;
+       if (chars.length > 0){
+           for (const b of breaks){
+               segments.push([start, b]);
+               start = b + 1;
+           }
+           if (start <= chars.length - 1){
+               segments.push([start, chars.length - 1]);
+           }
+       }
+       const medialIndicesGlobal = [];
+       for (const [s,e] of segments){
+           const len = e - s + 1;
+           if (len >= 3){
+               for (let j = 1; j <= len - 2; j++){
+                   const idx = s + j;
+                   const ch = chars[idx];
+                   if (ch !== ' ' && !RIGHT_JOIN_ONLY.has(ch)){
+                       medialIndicesGlobal.push(idx);
+                   }
+               }
+           }
+       }
+       window.__lastAnalysis = {chars, breaks, segments, medialIndicesGlobal};
+
+       if (chars.length === 0){ joinReport.textContent = ''; return; }
+       if (breaks.length){
+           joinReport.innerHTML = '連結が切れる位置 / Break points: <span class="hl-break">' + breaks.map(i=> (i+1)).join(', ') + '</span>（左から数えたインデックス / 1-based） ／ 難読箇所（語中形候補）/ Hard medial candidates: ' + medialIndicesGlobal.length + ' 文字 / chars';
+       } else {
+           joinReport.textContent = 'すべて連結（推定） / All joined (estimated) ／ 難読箇所（語中形候補）/ Hard medial candidates: ' + medialIndicesGlobal.length + ' 文字 / chars';
+       }
+   }
+   input.addEventListener('input', e=> analyze(e.target.value));
+
+   // 読み上げ（Web Speech）拡張：ボイス選択・速度/高さ・1文字ずつ・難読箇所
+   const speakBtn = document.getElementById('speakBtn');
+   const spellBtn = document.getElementById('spellBtn');
+   const repeatHardBtn = document.getElementById('repeatHardBtn');
+   const voiceSelect = document.getElementById('voiceSelect');
+   const rateRange = document.getElementById('rateRange');
+   const pitchRange = document.getElementById('pitchRange');
+
+   let voiceList = [];
+   function loadVoices(){
+       const all = window.speechSynthesis.getVoices();
+       const ar = all.filter(v => v.lang && v.lang.toLowerCase().startsWith('ar'));
+       const other = all.filter(v => !v.lang || !v.lang.toLowerCase().startsWith('ar'));
+       voiceList = [...ar, ...other];
+       voiceSelect.innerHTML = voiceList.map((v,i)=>`<option value="${i}">${v.name} (${v.lang||'unknown'})</option>`).join('');
+       const idx = voiceList.findIndex(v => v.lang && v.lang.toLowerCase().startsWith('ar'));
+       voiceSelect.selectedIndex = idx >= 0 ? idx : 0;
+   }
+   window.speechSynthesis.onvoiceschanged = loadVoices;
+   if (window.speechSynthesis.getVoices().length) loadVoices();
+
+   function speak(text){
+       if(!text) return;
+       const u = new SpeechSynthesisUtterance(text);
+       u.lang = 'ar';
+       const v = voiceList[voiceSelect.selectedIndex];
+       if (v) u.voice = v;
+       u.rate = parseFloat(rateRange.value)||1;
+       u.pitch = parseFloat(pitchRange.value)||1;
+       window.speechSynthesis.cancel();
+       window.speechSynthesis.speak(u);
+   }
+
+   speakBtn.addEventListener('click', ()=>{
+       const text = input.value.trim();
+       speak(text);
+   });
+
+   spellBtn.addEventListener('click', ()=>{
+       const text = input.value.trim();
+       if (!text) return;
+       const chars = Array.from(text).filter(c => c.trim() !== '');
+       window.speechSynthesis.cancel();
+       let delay = 0;
+       const v = voiceList[voiceSelect.selectedIndex] || null;
+       for (const ch of chars){
+           const u = new SpeechSynthesisUtterance(ch);
+           u.lang = 'ar';
+           if (v) u.voice = v;
+           u.rate = Math.max(0.4, (parseFloat(rateRange.value)||1) * 0.9);
+           u.pitch = parseFloat(pitchRange.value)||1;
+           setTimeout(()=> window.speechSynthesis.speak(u), delay);
+           delay += 350;
+       }
+   });
+
+   repeatHardBtn.addEventListener('click', ()=>{
+       const A = window.__lastAnalysis;
+       if (!A || !A.medialIndicesGlobal || !A.medialIndicesGlobal.length){
+           return spellBtn.click();
+       }
+       window.speechSynthesis.cancel();
+       let delay = 0;
+       const v = voiceList[voiceSelect.selectedIndex] || null;
+       for (const idx of A.medialIndicesGlobal){
+           const ch = A.chars[idx];
+           const u = new SpeechSynthesisUtterance(ch);
+           u.lang = 'ar';
+           if (v) u.voice = v;
+           u.rate = Math.max(0.4, (parseFloat(rateRange.value)||1) * 0.9);
+           u.pitch = parseFloat(pitchRange.value)||1;
+           setTimeout(()=> window.speechSynthesis.speak(u), delay);
+           delay += 380;
+       }
+   });
+
+   // 初期例
+   input.value = 'اللغة العربية جميلة';
+   analyze(input.value);
+
+   // === クイズ ===
+   const DUAL = LETTERS.filter(L=> !RIGHT_JOIN_ONLY.has(L.ch));
+   const quizQ = document.getElementById('quizQ');
+   const quizChoices = document.getElementById('quizChoices');
+   const quizInfo = document.getElementById('quizInfo');
+   const nextQuiz = document.getElementById('nextQuiz');
+
+   function pick(n, exclude){
+       const pool = DUAL.filter(L=> L !== exclude);
+       const arr = [];
+       while (arr.length < n && pool.length){
+           const i = Math.floor(Math.random()*pool.length);
+           arr.push(pool.splice(i,1)[0]);
+       }
+       return arr;
+   }
+
+   function makeMedialForm(ch){ return TATWEEL + ch + TATWEEL; }
+   function makeInitialForm(ch){ return ch + TATWEEL; }
+   function makeFinalForm(ch){ return TATWEEL + ch; }
+
+   function newQuiz(){
+       quizInfo.textContent = '';
+       quizChoices.innerHTML = '';
+       const correct = DUAL[Math.floor(Math.random()*DUAL.length)];
+       const mode = ['med','ini','fin'][Math.floor(Math.random()*3)];
+       const shape = mode==='med'? makeMedialForm(correct.ch) : mode==='ini'? makeInitialForm(correct.ch) : makeFinalForm(correct.ch);
+       quizQ.textContent = shape;
+       const distractors = pick(3, correct);
+       const options = [correct, ...distractors].sort(()=> Math.random()-0.5);
+       options.forEach(opt=>{
+           const b = document.createElement('button');
+           b.textContent = opt.name + ' ' + opt.ch;
+           b.addEventListener('click', ()=>{
+               if (opt===correct){ b.classList.add('correct'); quizInfo.textContent = '正解！ / Correct!'; }
+               else { b.classList.add('wrong'); quizInfo.textContent = `不正解… / Wrong. 正解 / Answer: ${correct.name} ${correct.ch}`; }
+           });
+           quizChoices.appendChild(b);
+       });
+   }
+   nextQuiz.addEventListener('click', newQuiz);
+   newQuiz();
+  </script>
+</body>
+</html>
