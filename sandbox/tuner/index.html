@@ -126,12 +126,12 @@
   }
   .mic-hz-display {
     margin-top: 10px;
-    font-size: clamp(32px, 9vw, 46px);
+    font-size: clamp(34px, 9vw, 50px);
     text-align: center;
   }
   .mic-note-display {
     margin-top: 4px;
-    font-size: 20px;
+    font-size: 22px;
     text-align: center;
   }
   .string-grid {
@@ -154,20 +154,63 @@
   }
   @media (max-width: 480px) {
     h1 {
-      font-size: 22px;
+      font-size: 26px;
       text-align: center;
     }
     .panel {
       padding: 16px;
     }
     button.string-btn {
-      font-size: 22px;
-      padding: 12px 8px;
+      font-size: 24px;
+      padding: 14px 8px;
     }
     .bpm-btn {
-      font-size: 16px;
-      padding: 8px 0;
+      font-size: 18px;
+      padding: 10px 0;
     }
+  }
+
+  h1 {
+    font-size: clamp(26px, 7vw, 34px);
+    text-align: center;
+    margin: 0 0 8px;
+  }
+  #micToggle {
+    font-size: 20px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    border: 2px solid #8b5a2b;
+    background: #444;
+    color: #eee;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 8px;
+  }
+  .tuner-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+  }
+  .tuner-side {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 80px;
+  }
+  .mic-target-note {
+    font-size: clamp(40px, 12vw, 56px);
+    font-weight: bold;
+  }
+  .mic-face {
+    font-size: clamp(32px, 10vw, 48px);
+    margin-top: 4px;
+  }
+  #tunerNeedle {
+    transform-origin: 100px 100px;
+    transition: transform 0.08s linear, opacity 0.08s linear;
+    opacity: 0;
   }
 </style>
 </head>
@@ -240,23 +283,29 @@
     <button id="metroToggle">⏱ Start</button>
   </div>
 
-    <div class="panel">
+      <div class="panel">
     <h2>Mic Tuner</h2>
     <button id="micToggle">Mic Tuner Start</button>
-    <div class="tuner-meter">
-      <svg viewBox="0 0 200 120">
-        <!-- arc -->
-        <path d="M40 100 A60 60 0 0 1 160 100" fill="none" stroke="#777" stroke-width="4" />
-        <!-- ticks -->
-        <line x1="40" y1="100" x2="50" y2="95" stroke="#777" stroke-width="2" />
-        <line x1="100" y1="40" x2="100" y2="52" stroke="#777" stroke-width="2" />
-        <line x1="160" y1="100" x2="150" y2="95" stroke="#777" stroke-width="2" />
-        <!-- needle group -->
-        <g id="tunerNeedle">
-          <line x1="100" y1="100" x2="100" y2="44" stroke="#e74c3c" stroke-width="4" stroke-linecap="round" />
-          <circle cx="100" cy="100" r="4" fill="#e74c3c" />
-        </g>
-      </svg>
+    <div class="tuner-row">
+      <div class="tuner-meter">
+        <svg viewBox="0 0 200 120">
+          <!-- arc -->
+          <path d="M40 100 A60 60 0 0 1 160 100" fill="none" stroke="#777" stroke-width="4" />
+          <!-- ticks -->
+          <line x1="40" y1="100" x2="50" y2="95" stroke="#777" stroke-width="2" />
+          <line x1="100" y1="40" x2="100" y2="52" stroke="#777" stroke-width="2" />
+          <line x1="160" y1="100" x2="150" y2="95" stroke="#777" stroke-width="2" />
+          <!-- needle group -->
+          <g id="tunerNeedle">
+            <line x1="100" y1="100" x2="100" y2="44" stroke="#e74c3c" stroke-width="4" stroke-linecap="round" />
+            <circle cx="100" cy="100" r="4" fill="#e74c3c" />
+          </g>
+        </svg>
+      </div>
+      <div class="tuner-side">
+        <div id="micTargetNote" class="mic-target-note">-</div>
+        <div id="micFace" class="mic-face">😐</div>
+      </div>
     </div>
     <div id="micHz" class="mic-hz-display">-- Hz</div>
     <div id="micNote" class="mic-note-display">--</div>
@@ -597,11 +646,20 @@ function nearestViolinNote(freq, baseA) {
 function updateMicDisplay(freq) {
   const hzDiv = document.getElementById('micHz');
   const noteDiv = document.getElementById('micNote');
+  const targetDiv = document.getElementById('micTargetNote');
+  const faceDiv = document.getElementById('micFace');
   if (!hzDiv || !noteDiv) return;
 
   if (!freq) {
     hzDiv.textContent = '-- Hz';
     noteDiv.textContent = '--';
+    if (targetDiv) {
+      targetDiv.textContent = '-';
+      targetDiv.style.color = '#eee';
+    }
+    if (faceDiv) {
+      faceDiv.textContent = '😐';
+    }
     updateTunerMeter(null);
     return;
   }
@@ -614,20 +672,64 @@ function updateMicDisplay(freq) {
     const cents = nearest.cents;
     const absC = Math.abs(cents);
     if (absC <= 150) {
+      const letter = nearest.note.charAt(0);
       const sign = cents > 0 ? '+' : '';
-      noteDiv.textContent = `${nearest.note} (${sign}${cents.toFixed(1)} cent)`;
+      noteDiv.textContent = `${letter} (${sign}${cents.toFixed(1)} cent)`;
+      if (targetDiv) {
+        targetDiv.textContent = letter;
+        if (absC <= 5) {
+          targetDiv.style.color = '#4caf50';
+        } else if (absC <= 20) {
+          targetDiv.style.color = '#f1c40f';
+        } else {
+          targetDiv.style.color = '#e74c3c';
+        }
+      }
+      if (faceDiv) {
+        if (absC <= 5) faceDiv.textContent = '😄';
+        else if (absC <= 20) faceDiv.textContent = '🙂';
+        else faceDiv.textContent = '😣';
+      }
       updateTunerMeter(cents);
     } else {
       noteDiv.textContent = '--';
+      if (targetDiv) {
+        targetDiv.textContent = '-';
+        targetDiv.style.color = '#eee';
+      }
+      if (faceDiv) {
+        faceDiv.textContent = '😐';
+      }
       updateTunerMeter(null);
     }
   } else {
     noteDiv.textContent = '--';
+    if (targetDiv) {
+      targetDiv.textContent = '-';
+      targetDiv.style.color = '#eee';
+    }
+    if (faceDiv) {
+      faceDiv.textContent = '😐';
+    }
     updateTunerMeter(null);
   }
 }
 
 function updateTunerMeter(cents) {
+  const needle = document.getElementById('tunerNeedle');
+  if (!needle) return;
+  if (cents == null || isNaN(cents)) {
+    needle.style.opacity = '0';
+    needle.style.transform = 'rotate(0deg)';
+    return;
+  }
+  const clamped = Math.max(-100, Math.min(100, cents));
+  const angle = (clamped / 100) * 60; // -60deg to +60deg
+  needle.style.opacity = '1';
+  needle.style.transform = `rotate(${angle}deg)`;
+}
+
+function setMicStatus(cents) {
   const needle = document.getElementById('tunerNeedle');
   if (!needle) return;
   if (cents == null || isNaN(cents)) {
