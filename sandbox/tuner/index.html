@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<title>Violin Tune Generator</title>
+<style>
+    body {
+    background: #222;
+    color: #eee;
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 20px 10px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+    .panel {
+    border: 3px solid #8b5a2b;
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 16px;
+    background: #333;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  button.string-btn {
+    font-size: 22px;
+    margin: 8px;
+    padding: 10px 20px;
+    background: #444;
+    color: #eee;
+    border: 2px solid #8b5a2b;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  button.string-btn:active {
+    background: #666;
+  }
+  button.string-btn.active {
+    background: #888;
+  }
+  button.string-btn:active {
+    background: #666;
+  }
+      select, input {
+    margin: 5px;
+    padding: 5px;
+    font-size: 16px;
+    background: #444;
+    color: #eee;
+    border: 1px solid #666;
+    border-radius: 6px;
+  }
+  .sub-label {
+    font-size: 12px;
+    color: #aaa;
+    margin-top: 4px;
+  }
+  .freq-display {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #bbb;
+  }
+  .bpm-presets {
+    margin-bottom: 10px;
+  }
+  .bpm-btn {
+    font-size: 14px;
+    margin: 2px;
+    padding: 4px 8px;
+    background: #444;
+    color: #eee;
+    border: 1px solid #666;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .bpm-btn:hover {
+    background: #555;
+  }
+  .pitch-buttons {
+    display: flex;
+    gap: 6px;
+    margin: 6px 0;
+  }
+  .pitch-btn {
+    flex: 1;
+    padding: 6px 0;
+    background: #444;
+    color: #eee;
+    border: 1px solid #666;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .pitch-btn.active {
+    background: #777;
+  }
+  .temperament-buttons {
+    display: flex;
+    gap: 6px;
+    margin: 6px 0 10px 0;
+  }
+  .temp-btn {
+    flex: 1;
+    padding: 6px 0;
+    background: #444;
+    color: #eee;
+    border: 1px solid #666;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .temp-btn.active {
+    background: #777;
+  }
+</style>
+</head>
+<body>
+  <h1>Violin Tune Generator</h1>
+
+    <div class="panel">
+    <label>基準ピッチ: </label>
+    <div class="pitch-buttons">
+      <button class="pitch-btn" data-pitch="440">440</button>
+      <button class="pitch-btn" data-pitch="441">441</button>
+      <button class="pitch-btn" data-pitch="442">442</button>
+    </div>
+    <select id="refPitch" style="display:none">
+      <option value="440">440 Hz</option>
+      <option value="441">441 Hz</option>
+      <option value="442" selected>442 Hz</option>
+    </select>
+    <div id="refPitchLabel" class="sub-label"></div>
+
+    <label>音律: </label>
+    <div class="temperament-buttons">
+      <button class="temp-btn" data-temp="equal">平均律</button>
+      <button class="temp-btn" data-temp="pythagorean">ピタゴラス</button>
+    </div>
+    <select id="temperament" style="display:none">
+      <option value="equal" selected>平均律</option>
+      <option value="pythagorean">ピタゴラス</option>
+    </select>
+
+    <label>音色: </label>
+    <select id="timbre">
+      <option value="sine">sine</option>
+      <option value="harmonic">harmonic</option>
+      <option value="saw" selected>saw</option>
+      <option value="fm">fm</option>
+    </select>
+  </div>
+
+    <div class="panel">
+    <button class="string-btn" data-note="G3">G</button>
+    <button class="string-btn" data-note="D4">D</button>
+    <button class="string-btn" data-note="A4">A</button>
+    <button class="string-btn" data-note="E5">E</button>
+    <div id="freqDisplay" class="freq-display"></div>
+  </div>
+
+    <div class="panel">
+    <div class="bpm-presets">
+      <button class="bpm-btn" data-bpm="60">60</button>
+      <button class="bpm-btn" data-bpm="90">90</button>
+      <button class="bpm-btn" data-bpm="120">120</button>
+      <button class="bpm-btn" data-bpm="180">180</button>
+    </div>
+    <label>BPM:</label>
+    <input id="bpm" type="number" value="60" min="30" max="240" step="1" list="bpmList" />
+    <datalist id="bpmList">
+      <option value="40"></option>
+      <option value="50"></option>
+      <option value="60"></option>
+      <option value="72"></option>
+      <option value="80"></option>
+      <option value="96"></option>
+      <option value="100"></option>
+      <option value="120"></option>
+      <option value="144"></option>
+    </datalist>
+    <button id="metroToggle">Metronome Start</button>
+  </div>
+
+<script>
+// ==========================
+// Audio context
+// ==========================
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let activeOsc = null;
+let activeGain = null;
+let activeNote = null;
+let activeButton = null;
+let metroInterval = null;
+
+// ==========================
+// Frequency mapping
+// ==========================
+function getFreq(note, baseA) {
+  // note: 'A4','D4','G3','E5'
+  const temperament = document.getElementById('temperament').value;
+
+  const ratios_equal = {
+    'A4': 1,
+    // MIDI: G3=55, D4=62, A4=69, E5=76
+    'D4': Math.pow(2, -7/12),
+    'G3': Math.pow(2, -14/12),
+    'E5': Math.pow(2, 7/12)
+  };
+
+  const ratios_pyth = {
+    // Pythagorean from A4: D4 and G3 are pure fifths down, E5 is a pure fifth up
+    'A4': 1,
+    'D4': 2/3,
+    'G3': 4/9,
+    'E5': 3/2
+  };
+
+  const table = temperament === 'pythagorean' ? ratios_pyth : ratios_equal;
+  return baseA * table[note];
+}
+
+const pitchInfo = {
+  440: "標準的なコンサートピッチ (A4 = 440 Hz)",
+  441: "ウィーン・フィルなどで用いられることがあるとされるピッチ (A4 = 441 Hz)",
+  442: "近年のオーケストラでよく使われるやや高めのピッチ (A4 = 442 Hz)"
+};
+
+function updateRefPitchLabel() {
+  const sel = document.getElementById('refPitch');
+  const labelDiv = document.getElementById('refPitchLabel');
+  if (!sel || !labelDiv) return;
+  const v = sel.value;
+  labelDiv.textContent = pitchInfo[v] || "";
+}
+
+document.getElementById('refPitch').addEventListener('change', updateRefPitchLabel);
+updateRefPitchLabel();
+
+const pitchButtons = document.querySelectorAll('.pitch-btn');
+
+function syncPitchButtons() {
+  const sel = document.getElementById('refPitch');
+  if (!sel) return;
+  const v = sel.value;
+  pitchButtons.forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.pitch === v);
+  });
+}
+
+pitchButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const v = btn.dataset.pitch;
+    const sel = document.getElementById('refPitch');
+    if (sel) sel.value = v;
+    updateRefPitchLabel();
+    syncPitchButtons();
+  });
+});
+
+syncPitchButtons();
+
+// ==========================
+// ADSR envelope
+// ==========================
+function applyADSR(gainNode, now) {
+  const a = 0.015;
+  const d = 0.06;
+  const s = 0.7;
+  const r = 0.08;
+
+  gainNode.gain.cancelScheduledValues(now);
+  gainNode.gain.setValueAtTime(0, now);
+  gainNode.gain.linearRampToValueAtTime(1, now + a);
+  gainNode.gain.linearRampToValueAtTime(s, now + a + d);
+
+  return { release: r };
+}
+
+function releaseADSR(gainNode, now, r) {
+  gainNode.gain.cancelScheduledValues(now);
+  gainNode.gain.setValueAtTime(gainNode.gain.value, now);
+  gainNode.gain.linearRampToValueAtTime(0, now + r);
+}
+
+// ==========================
+// Timbres
+// ==========================
+function makeTimbre(freq) {
+  const tim = document.getElementById('timbre').value;
+  const osc = audioCtx.createOscillator();
+
+  if (tim === 'sine') {
+    osc.type = 'sine';
+  } else if (tim === 'saw') {
+    osc.type = 'sawtooth';
+  } else if (tim === 'harmonic') {
+    // harmonic summing with periodicWave
+    const real = new Float32Array([0,1,0.4,0.2,0.1]);
+    const imag = new Float32Array(real.length);
+    const wave = audioCtx.createPeriodicWave(real, imag);
+    osc.setPeriodicWave(wave);
+  } else if (tim === 'fm') {
+    // FM synth: carrier + modulator
+    const mod = audioCtx.createOscillator();
+    const modGain = audioCtx.createGain();
+    mod.frequency.setValueAtTime(freq * 1.5, audioCtx.currentTime);
+    modGain.gain.setValueAtTime(50, audioCtx.currentTime);
+    mod.connect(modGain);
+    modGain.connect(osc.frequency);
+    mod.start();
+    osc._mod = mod; // store to stop later
+    osc._modGain = modGain;
+  } else if (tim === 'pluck') {
+    osc.type = 'triangle';
+  }
+
+  osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+  return osc;
+}
+
+function displayFrequency(note, freq, baseA) {
+  const temperament = document.getElementById('temperament').value;
+  const tempLabel = temperament === 'pythagorean' ? 'ピタゴラス音律' : '平均律';
+  const div = document.getElementById('freqDisplay');
+  if (!div) return;
+  div.textContent = `${note} ≒ ${freq.toFixed(2)} Hz (${tempLabel}, A4 = ${baseA} Hz)`;
+}
+
+// ==========================
+// Play / stop note (toggle)
+// ==========================
+function playNote(note, button) {
+  // stop current if any
+  stopCurrentNote();
+
+  const baseA = parseFloat(document.getElementById('refPitch').value);
+  const f = getFreq(note, baseA);
+  displayFrequency(note, f, baseA);
+
+  const osc = makeTimbre(f);
+  const gainNode = audioCtx.createGain();
+
+  osc.connect(gainNode).connect(audioCtx.destination);
+
+  const now = audioCtx.currentTime;
+  const env = applyADSR(gainNode, now);
+
+  osc.start(now);
+  activeOsc = osc;
+  activeGain = gainNode;
+  activeNote = note;
+  activeButton = button || null;
+  if (activeButton) activeButton.classList.add('active');
+  activeOsc._release = env.release;
+}
+
+function stopCurrentNote() {
+  if (!activeOsc) return;
+  const now = audioCtx.currentTime;
+  releaseADSR(activeGain, now, activeOsc._release || 0.08);
+  activeOsc.stop(now + (activeOsc._release || 0.08) + 0.01);
+  if (activeOsc._mod) activeOsc._mod.stop(now + (activeOsc._release || 0.08) + 0.01);
+  if (activeButton) activeButton.classList.remove('active');
+  activeOsc = null;
+  activeGain = null;
+  activeNote = null;
+  activeButton = null;
+}
+
+// ==========================
+// Button events
+// ==========================
+const btns = document.querySelectorAll('.string-btn');
+btns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const note = btn.dataset.note;
+    if (activeNote === note) {
+      stopCurrentNote();
+    } else {
+      playNote(note, btn);
+    }
+  });
+});
+
+// Keyboard
+const tempButtons = document.querySelectorAll('.temp-btn');
+
+function syncTempButtons() {
+  const sel = document.getElementById('temperament');
+  if (!sel) return;
+  const v = sel.value;
+  tempButtons.forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.temp === v);
+  });
+}
+
+tempButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const v = btn.dataset.temp;
+    const sel = document.getElementById('temperament');
+    if (sel) sel.value = v;
+    syncTempButtons();
+  });
+});
+
+syncTempButtons();
+
+// Keyboard
+const keyMap = {
+  'g': 'G3',
+  'd': 'D4',
+  'a': 'A4',
+  'e': 'E5'
+};
+
+window.addEventListener('keydown', e => {
+  if (e.repeat) return;
+  const note = keyMap[e.key];
+  if (!note) return;
+  if (activeNote === note) {
+    stopCurrentNote();
+  } else {
+    const btn = Array.from(btns).find(b => b.dataset.note === note) || null;
+    playNote(note, btn);
+  }
+});
+
+// ==========================
+// Metronome
+// ==========================
+function startMetronome() {
+  const bpm = parseInt(document.getElementById('bpm').value);
+  const intervalMs = 60000 / bpm;
+
+  metroInterval = setInterval(() => {
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(1000, audioCtx.currentTime);
+    g.gain.setValueAtTime(0.7, audioCtx.currentTime);
+    osc.connect(g).connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.05);
+  }, intervalMs);
+}
+
+function stopMetronome() {
+  clearInterval(metroInterval);
+  metroInterval = null;
+}
+
+const bpmButtons = document.querySelectorAll('.bpm-btn');
+
+bpmButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const bpmValue = parseInt(btn.dataset.bpm, 10);
+    const bpmInput = document.getElementById('bpm');
+    if (bpmInput) {
+      bpmInput.value = bpmValue;
+    }
+    if (metroInterval) {
+      stopMetronome();
+      startMetronome();
+      document.getElementById('metroToggle').innerText = 'Metronome Stop';
+    }
+  });
+});
+
+document.getElementById('metroToggle').onclick = () => {
+  if (!metroInterval) {
+    startMetronome();
+    document.getElementById('metroToggle').innerText = 'Metronome Stop';
+  } else {
+    stopMetronome();
+    document.getElementById('metroToggle').innerText = 'Metronome Start';
+  }
+};
+</script>
+</body>
+</html>
