@@ -2,9 +2,9 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8" />
-<title>Violin Tune Generator</title>
+<title>Violin Tone Generator & Mic Tuner</title>
 <style>
-    body {
+  body {
     background: #222;
     color: #eee;
     font-family: sans-serif;
@@ -12,27 +12,27 @@
     flex-direction: column;
     align-items: stretch;
     padding: 20px 10px;
-    max-width: 480px;
+    max-width: 640px;
     margin: 0 auto;
   }
-    .panel {
+  .panel {
     border: 3px solid #8b5a2b;
     border-radius: 12px;
-    padding: 16px;
+    padding: 20px;
     margin-top: 16px;
     background: #333;
     width: 100%;
     box-sizing: border-box;
   }
   button.string-btn {
-    font-size: 22px;
-    margin: 8px;
-    padding: 10px 20px;
+    font-size: 24px;
+    padding: 14px 10px;
     background: #444;
     color: #eee;
     border: 2px solid #8b5a2b;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
+    width: 100%;
   }
   button.string-btn:active {
     background: #666;
@@ -40,12 +40,9 @@
   button.string-btn.active {
     background: #888;
   }
-  button.string-btn:active {
-    background: #666;
-  }
-      select, input {
-    margin: 5px;
-    padding: 5px;
+  select, input {
+    margin: 5px 0;
+    padding: 6px 8px;
     font-size: 16px;
     background: #444;
     color: #eee;
@@ -59,24 +56,37 @@
   }
   .freq-display {
     margin-top: 10px;
-    font-size: 14px;
+    font-size: 16px;
     color: #bbb;
+    text-align: center;
   }
   .bpm-presets {
     margin-bottom: 10px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
   }
   .bpm-btn {
-    font-size: 14px;
-    margin: 2px;
-    padding: 4px 8px;
+    font-size: 18px;
+    padding: 10px 0;
     background: #444;
     color: #eee;
     border: 1px solid #666;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
+    width: 100%;
   }
   .bpm-btn:hover {
     background: #555;
+  }
+  #metroToggle {
+    font-size: 20px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    border: 2px solid #8b5a2b;
+    background: #444;
+    color: #eee;
+    cursor: pointer;
   }
   .pitch-buttons {
     display: flex;
@@ -85,12 +95,12 @@
   }
   .pitch-btn {
     flex: 1;
-    padding: 6px 0;
+    padding: 8px 0;
     background: #444;
     color: #eee;
     border: 1px solid #666;
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 16px;
     cursor: pointer;
   }
   .pitch-btn.active {
@@ -103,21 +113,66 @@
   }
   .temp-btn {
     flex: 1;
-    padding: 6px 0;
+    padding: 8px 0;
     background: #444;
     color: #eee;
     border: 1px solid #666;
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 16px;
     cursor: pointer;
   }
   .temp-btn.active {
     background: #777;
   }
+  .mic-hz-display {
+    margin-top: 10px;
+    font-size: clamp(32px, 9vw, 46px);
+    text-align: center;
+  }
+  .mic-note-display {
+    margin-top: 4px;
+    font-size: 20px;
+    text-align: center;
+  }
+  .string-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .tuner-meter {
+    margin-top: 12px;
+    display: flex;
+    justify-content: center;
+  }
+  .tuner-meter svg {
+    width: 100%;
+    max-width: 260px;
+  }
+  #tunerNeedle {
+    transform-origin: 100px 100px;
+    transition: transform 0.08s linear;
+  }
+  @media (max-width: 480px) {
+    h1 {
+      font-size: 22px;
+      text-align: center;
+    }
+    .panel {
+      padding: 16px;
+    }
+    button.string-btn {
+      font-size: 22px;
+      padding: 12px 8px;
+    }
+    .bpm-btn {
+      font-size: 16px;
+      padding: 8px 0;
+    }
+  }
 </style>
 </head>
 <body>
-  <h1>Violin Tune Generator</h1>
+  <h1>Violin Tone Generator & Mic Tuner</h1>
 
     <div class="panel">
     <label>基準ピッチ: </label>
@@ -152,11 +207,13 @@
     </select>
   </div>
 
-    <div class="panel">
-    <button class="string-btn" data-note="G3">G</button>
-    <button class="string-btn" data-note="D4">D</button>
-    <button class="string-btn" data-note="A4">A</button>
-    <button class="string-btn" data-note="E5">E</button>
+      <div class="panel">
+    <div class="string-grid">
+      <button class="string-btn" data-note="G3">G</button>
+      <button class="string-btn" data-note="D4">D</button>
+      <button class="string-btn" data-note="A4">A</button>
+      <button class="string-btn" data-note="E5">E</button>
+    </div>
     <div id="freqDisplay" class="freq-display"></div>
   </div>
 
@@ -180,7 +237,30 @@
       <option value="120"></option>
       <option value="144"></option>
     </datalist>
-    <button id="metroToggle">Metronome Start</button>
+    <button id="metroToggle">⏱ Start</button>
+  </div>
+
+    <div class="panel">
+    <h2>Mic Tuner</h2>
+    <button id="micToggle">Mic Tuner Start</button>
+    <div class="tuner-meter">
+      <svg viewBox="0 0 200 120">
+        <!-- arc -->
+        <path d="M40 100 A60 60 0 0 1 160 100" fill="none" stroke="#777" stroke-width="4" />
+        <!-- ticks -->
+        <line x1="40" y1="100" x2="50" y2="95" stroke="#777" stroke-width="2" />
+        <line x1="100" y1="40" x2="100" y2="52" stroke="#777" stroke-width="2" />
+        <line x1="160" y1="100" x2="150" y2="95" stroke="#777" stroke-width="2" />
+        <!-- needle group -->
+        <g id="tunerNeedle">
+          <line x1="100" y1="100" x2="100" y2="44" stroke="#e74c3c" stroke-width="4" stroke-linecap="round" />
+          <circle cx="100" cy="100" r="4" fill="#e74c3c" />
+        </g>
+      </svg>
+    </div>
+    <div id="micHz" class="mic-hz-display">-- Hz</div>
+    <div id="micNote" class="mic-note-display">--</div>
+    <div id="micStatus" class="sub-label"></div>
   </div>
 
 <script>
@@ -193,6 +273,12 @@ let activeGain = null;
 let activeNote = null;
 let activeButton = null;
 let metroInterval = null;
+let micRunning = false;
+let micStream = null;
+let micSource = null;
+let micAnalyser = null;
+let micData = null;
+let micAnimId = null;
 
 // ==========================
 // Frequency mapping
@@ -332,6 +418,9 @@ function displayFrequency(note, freq, baseA) {
 // Play / stop note (toggle)
 // ==========================
 function playNote(note, button) {
+  // when tone generator plays, stop mic tuner
+  stopMicTuner();
+
   // stop current if any
   stopCurrentNote();
 
@@ -428,6 +517,203 @@ window.addEventListener('keydown', e => {
 });
 
 // ==========================
+// YIN-based f0 estimation for Mic Tuner
+// ==========================
+function yin(buffer, sampleRate) {
+  const threshold = 0.1;
+  const size = buffer.length;
+  const maxTau = Math.floor(size / 2);
+  const diff = new Float32Array(maxTau);
+
+  // step 1: difference function
+  for (let tau = 0; tau < maxTau; tau++) {
+    let sum = 0;
+    for (let i = 0; i < maxTau; i++) {
+      const delta = buffer[i] - buffer[i + tau];
+      sum += delta * delta;
+    }
+    diff[tau] = sum;
+  }
+
+  // step 2: cumulative mean normalized difference function
+  const cmnd = new Float32Array(maxTau);
+  cmnd[0] = 1;
+  let runningSum = 0;
+  for (let tau = 1; tau < maxTau; tau++) {
+    runningSum += diff[tau];
+    cmnd[tau] = diff[tau] * tau / (runningSum || 1);
+  }
+
+  // step 3: absolute threshold
+  let tauEstimate = -1;
+  for (let tau = 2; tau < maxTau; tau++) {
+    if (cmnd[tau] < threshold) {
+      while (tau + 1 < maxTau && cmnd[tau + 1] < cmnd[tau]) {
+        tau++;
+      }
+      tauEstimate = tau;
+      break;
+    }
+  }
+  if (tauEstimate === -1) return null;
+
+  // step 4: parabolic interpolation
+  let betterTau = tauEstimate;
+  if (tauEstimate > 1 && tauEstimate < maxTau - 1) {
+    const x0 = cmnd[tauEstimate - 1];
+    const x1 = cmnd[tauEstimate];
+    const x2 = cmnd[tauEstimate + 1];
+    const denom = 2 * (2 * x1 - x2 - x0) || 1;
+    betterTau = tauEstimate + (x2 - x0) / denom;
+  }
+
+  const freq = sampleRate / betterTau;
+  if (freq < 50 || freq > 2000) return null;
+  return freq;
+}
+
+function nearestViolinNote(freq, baseA) {
+  const notes = ['G3', 'D4', 'A4', 'E5'];
+  let bestNote = null;
+  let bestAbsCents = Infinity;
+  let bestCents = 0;
+
+  notes.forEach(note => {
+    const fTarget = getFreq(note, baseA);
+    if (!fTarget || fTarget <= 0) return;
+    const cents = 1200 * Math.log2(freq / fTarget);
+    const absC = Math.abs(cents);
+    if (absC < bestAbsCents) {
+      bestAbsCents = absC;
+      bestCents = cents;
+      bestNote = note;
+    }
+  });
+
+  if (!bestNote) return null;
+  return { note: bestNote, cents: bestCents };
+}
+
+function updateMicDisplay(freq) {
+  const hzDiv = document.getElementById('micHz');
+  const noteDiv = document.getElementById('micNote');
+  if (!hzDiv || !noteDiv) return;
+
+  if (!freq) {
+    hzDiv.textContent = '-- Hz';
+    noteDiv.textContent = '--';
+    updateTunerMeter(null);
+    return;
+  }
+
+  const baseA = parseFloat(document.getElementById('refPitch').value) || 440;
+  const nearest = nearestViolinNote(freq, baseA);
+
+  hzDiv.textContent = freq.toFixed(2) + ' Hz';
+  if (nearest) {
+    const cents = nearest.cents;
+    const absC = Math.abs(cents);
+    if (absC <= 150) {
+      const sign = cents > 0 ? '+' : '';
+      noteDiv.textContent = `${nearest.note} (${sign}${cents.toFixed(1)} cent)`;
+      updateTunerMeter(cents);
+    } else {
+      noteDiv.textContent = '--';
+      updateTunerMeter(null);
+    }
+  } else {
+    noteDiv.textContent = '--';
+    updateTunerMeter(null);
+  }
+}
+
+function updateTunerMeter(cents) {
+  const needle = document.getElementById('tunerNeedle');
+  if (!needle) return;
+  if (cents == null || isNaN(cents)) {
+    needle.style.transform = 'rotate(0deg)';
+    return;
+  }
+  const clamped = Math.max(-100, Math.min(100, cents));
+  const angle = (clamped / 100) * 60; // -60deg to +60deg
+  needle.style.transform = `rotate(${angle}deg)`;
+}
+
+function setMicStatus(msg) {
+  const div = document.getElementById('micStatus');
+  if (!div) return;
+  div.textContent = msg || '';
+}
+
+async function startMicTuner() {
+  if (micRunning) return;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    setMicStatus('このブラウザではマイク入力が利用できません');
+    return;
+  }
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (e) {
+    setMicStatus('マイクへのアクセスが許可されませんでした');
+    return;
+  }
+
+  micSource = audioCtx.createMediaStreamSource(micStream);
+  micAnalyser = audioCtx.createAnalyser();
+  micAnalyser.fftSize = 2048;
+  micData = new Float32Array(micAnalyser.fftSize);
+  micSource.connect(micAnalyser);
+
+  micRunning = true;
+  const btn = document.getElementById('micToggle');
+  if (btn) btn.textContent = 'Mic Tuner Stop';
+  setMicStatus('Listening...');
+  micLoop();
+}
+
+function stopMicTuner() {
+  if (!micRunning) return;
+  micRunning = false;
+  if (micAnimId) cancelAnimationFrame(micAnimId);
+  if (micSource && micAnalyser) {
+    try { micSource.disconnect(); } catch (e) {}
+    try { micAnalyser.disconnect(); } catch (e) {}
+  }
+  if (micStream) {
+    micStream.getTracks().forEach(t => t.stop());
+  }
+  micStream = null;
+  micSource = null;
+  micAnalyser = null;
+  micData = null;
+
+  const btn = document.getElementById('micToggle');
+  if (btn) btn.textContent = 'Mic Tuner Start';
+  setMicStatus('Stopped');
+}
+
+function micLoop() {
+  if (!micRunning || !micAnalyser || !micData) return;
+  micAnalyser.getFloatTimeDomainData(micData);
+
+  // RMS チェックで無音を除外
+  let rms = 0;
+  for (let i = 0; i < micData.length; i++) {
+    const v = micData[i];
+    rms += v * v;
+  }
+  rms = Math.sqrt(rms / micData.length);
+  if (rms < 0.005) {
+    updateMicDisplay(null);
+  } else {
+    const freq = yin(micData, audioCtx.sampleRate);
+    updateMicDisplay(freq);
+  }
+
+  micAnimId = requestAnimationFrame(micLoop);
+}
+
+// ==========================
 // Metronome
 // ==========================
 function startMetronome() {
@@ -463,7 +749,7 @@ bpmButtons.forEach(btn => {
     if (metroInterval) {
       stopMetronome();
       startMetronome();
-      document.getElementById('metroToggle').innerText = 'Metronome Stop';
+      document.getElementById('metroToggle').innerText = '⏱ Stop';
     }
   });
 });
@@ -471,12 +757,24 @@ bpmButtons.forEach(btn => {
 document.getElementById('metroToggle').onclick = () => {
   if (!metroInterval) {
     startMetronome();
-    document.getElementById('metroToggle').innerText = 'Metronome Stop';
+    document.getElementById('metroToggle').innerText = '⏱ Stop';
   } else {
     stopMetronome();
-    document.getElementById('metroToggle').innerText = 'Metronome Start';
+    document.getElementById('metroToggle').innerText = '⏱ Start';
   }
 };
+
+// Mic toggle button
+const micToggleBtn = document.getElementById('micToggle');
+if (micToggleBtn) {
+  micToggleBtn.addEventListener('click', () => {
+    if (micRunning) {
+      stopMicTuner();
+    } else {
+      startMicTuner();
+    }
+  });
+}
 </script>
 </body>
 </html>
