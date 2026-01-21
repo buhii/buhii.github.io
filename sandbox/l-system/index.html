@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>3D L-system + Leaves/Flowers + Wind + JSON Export</title>
+  <style>
+    :root{--bg:#0b0f14;--panel:#121826;--text:#e6edf3;--muted:#9fb1c5;--accent:#5eead4;--danger:#fb7185;--border:#223046;}
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Noto Sans JP",sans-serif;}
+    #app{display:grid;grid-template-columns:380px 1fr;height:100%;}
+    #panel{background:linear-gradient(180deg,var(--panel),#0f1522);border-right:1px solid var(--border);padding:14px 14px 16px;overflow:auto;}
+    #view{position:relative;min-width:0;}
+    #canvas{display:block;width:100%;height:100%;}
+
+    h1{font-size:16px;margin:0 0 10px;letter-spacing:.3px;}
+    .row{display:flex;gap:10px;align-items:center;margin:8px 0;}
+    label{font-size:12px;color:var(--muted);display:block;margin:10px 0 6px;}
+    input,select,textarea,button{font:inherit;}
+    textarea{width:100%;min-height:90px;resize:vertical;background:#0b1220;color:var(--text);border:1px solid var(--border);border-radius:12px;padding:10px;outline:none;}
+    input[type="number"], input[type="text"], select{width:100%;background:#0b1220;color:var(--text);border:1px solid var(--border);border-radius:12px;padding:8px 10px;outline:none;}
+    input[type="range"]{width:100%;}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+    button{border:1px solid var(--border);background:#0b1220;color:var(--text);border-radius:12px;padding:9px 10px;cursor:pointer;}
+    button.primary{background:rgba(94,234,212,.12);border-color:rgba(94,234,212,.35);}
+    button:hover{border-color:rgba(94,234,212,.4)}
+    button.danger{background:rgba(251,113,133,.10);border-color:rgba(251,113,133,.35)}
+    .hint{font-size:12px;color:var(--muted);line-height:1.45;margin:10px 0 0;}
+    .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:999px;padding:5px 9px;color:var(--muted);font-size:12px;}
+    .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:11px;border:1px solid var(--border);border-bottom-width:2px;border-radius:8px;padding:2px 6px;color:var(--muted);background:#0b1220;}
+    .section{border-top:1px solid rgba(34,48,70,.7);margin-top:12px;padding-top:12px;}
+    .small{font-size:12px;color:var(--muted)}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+
+    #overlay{position:absolute;left:12px;top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;z-index:5;}
+    #hud{position:absolute;right:12px;top:12px;max-width:52ch;white-space:pre-wrap;background:rgba(11,18,32,.88);border:1px solid rgba(34,48,70,.8);border-radius:12px;padding:10px;display:none;z-index:6;}
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="panel">
+      <h1>3D L-system</h1>
+      <div class="row">
+        <span class="pill">Renderer: <span class="mono">Three.js</span></span>
+        <span class="pill">Export: <span class="mono">JSON</span> / <span class="mono">GLB</span></span>
+      </div>
+
+      <label>Preset</label>
+      <select id="preset"></select>
+
+      <div class="section">
+        <div class="grid2">
+          <div>
+            <label>Axiom</label>
+            <input id="axiom" type="text" value="X" />
+          </div>
+          <div>
+            <label>Iterations</label>
+            <input id="iters" type="number" min="0" max="10" step="1" value="6" />
+          </div>
+        </div>
+
+        <label>Rules (one per line)</label>
+        <textarea id="rules"></textarea>
+
+        <div class="grid3">
+          <div>
+            <label>Angle θ (deg)</label>
+            <input id="angle" type="number" min="0" max="180" step="1" value="25" />
+          </div>
+          <div>
+            <label>Step length</label>
+            <input id="step" type="number" min="0.01" max="10" step="0.01" value="1" />
+          </div>
+          <div>
+            <label>Thickness</label>
+            <input id="thickness" type="number" min="0.001" max="2" step="0.001" value="0.04" />
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div>
+            <label>Max segments (safety)</label>
+            <input id="maxSeg" type="number" min="100" max="200000" step="100" value="60000" />
+          </div>
+          <div>
+            <label>Branch scale decay (0-1)</label>
+            <input id="scaleDecay" type="number" min="0" max="1" step="0.01" value="0.92" />
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="row" style="justify-content:space-between; align-items:flex-end;">
+            <div style="flex:1">
+              <label>Wind strength</label>
+              <input id="windStrength" type="range" min="0" max="1" step="0.01" value="0.25" />
+            </div>
+            <div style="width:90px">
+              <label>Speed</label>
+              <input id="windSpeed" type="number" min="0" max="5" step="0.05" value="1.2" />
+            </div>
+          </div>
+
+          <div class="grid2">
+            <div>
+              <label>Leaf prob (auto)</label>
+              <input id="leafProb" type="number" min="0" max="1" step="0.01" value="0.35" />
+            </div>
+            <div>
+              <label>Flower prob (auto)</label>
+              <input id="flowerProb" type="number" min="0" max="1" step="0.01" value="0.03" />
+            </div>
+          </div>
+          <div class="grid2">
+            <div>
+              <label>Bud prob (auto)</label>
+              <input id="budProb" type="number" min="0" max="1" step="0.01" value="0.10" />
+            </div>
+            <div>
+              <label>Instance size</label>
+              <input id="instSize" type="number" min="0.005" max="1" step="0.005" value="0.06" />
+            </div>
+          </div>
+          <div class="grid2">
+            <div>
+              <label>Seed</label>
+              <input id="seed" type="number" min="0" max="999999" step="1" value="12345" />
+            </div>
+            <div>
+              <label>Place at tips only</label>
+              <select id="tipsOnly">
+                <option value="1" selected>Yes</option>
+                <option value="0">No (also along branches)</option>
+              </select>
+            </div>
+          </div>
+
+          <p class="hint">
+            Markers you can put in the grammar: <span class="mono">L</span>=leaf, <span class="mono">B</span>=bud, <span class="mono">*</span>=flower.
+            If you don’t use markers, auto placement uses the probabilities above.
+          </p>
+        </div>
+
+        <div class="row" style="margin-top:12px;">
+          <button id="generate" class="primary" style="flex:1">Generate (Ctrl/Command + Enter)</button>
+          <button id="resetCam" style="width:120px">Reset camera</button>
+        </div>
+        <div class="row">
+          <button id="exportJSON" style="flex:1">Export JSON</button>
+          <button id="exportGLB" style="flex:1">Export GLB</button>
+        </div>
+        <div class="row">
+          <button id="clear" class="danger" style="flex:1">Clear</button>
+        </div>
+
+        <p class="hint">
+          Turtle: F draw, f move, +/ - yaw, &amp; / ^ pitch, slash roll negative, (positive roll uses the backslash key), | 180 deg, [ ] branch.
+        </p>
+      </div>
+
+      <div class="section">
+        <label>Log</label>
+        <div id="log" class="small" style="white-space:pre-wrap;background:#0b1220;border:1px solid var(--border);border-radius:12px;padding:10px;min-height:54px;"></div>
+      </div>
+    </div>
+
+    <div id="view">
+      <canvas id="canvas"></canvas>
+      <div id="overlay">
+        <span class="pill"><span class="kbd">L</span> toggle lights</span>
+        <span class="pill"><span class="kbd">G</span> toggle grid</span>
+        <span class="pill"><span class="kbd">H</span> help</span>
+      </div>
+      <div id="hud"></div>
+    </div>
+  </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+   import * as THREE from 'three';
+   import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+   import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+
+   const NL = String.fromCharCode(10);
+   const CR = String.fromCharCode(13);
+   const BS = String.fromCharCode(92);
+
+   const $ = (id) => document.getElementById(id);
+   const logEl = $('log');
+   const hudEl = $('hud');
+
+   function log(msg){ logEl.textContent = msg; }
+   function hudShow(msg){ hudEl.style.display='block'; hudEl.textContent = msg; }
+   function hudHide(){ hudEl.style.display='none'; hudEl.textContent = ''; }
+
+   window.addEventListener('error', (e) => {
+       const m = e && e.message ? e.message : '';
+       if(m && m.indexOf('ResizeObserver loop') >= 0) return;
+       const msg = (e && e.error && e.error.stack) ? e.error.stack : (m || String(e));
+       hudShow('Runtime error:' + NL + msg);
+   });
+   window.addEventListener('unhandledrejection', (e) => {
+       const msg = (e && e.reason && e.reason.stack) ? e.reason.stack : String(e.reason);
+       hudShow('Unhandled promise rejection:' + NL + msg);
+   });
+
+   function makeRng(seed){
+       let s = (seed >>> 0) || 1;
+       return {
+           next(){ s = (1664525 * s + 1013904223) >>> 0; return s / 4294967296; }
+       };
+   }
+
+   function buildPresets(){
+       const plantRules = [
+           'X=F[+X]F[-X]+XLB*',
+           'F=FF'
+       ].join(NL);
+
+       const bushRules = [
+           'F=F[+F]F[-F]F'
+       ].join(NL);
+
+       const spiralRules = [
+           'X=F[+X][/X][' + BS + 'X][-X]FX',
+           'F=FF'
+       ].join(NL);
+
+       return [
+           {name:'Plant (markers L/B/*)', axiom:'X', iters:6, angle:25, step:1, thickness:0.04, maxSeg:60000, scaleDecay:0.92, rules:plantRules},
+           {name:'Bush (auto placement)', axiom:'F', iters:5, angle:22, step:1, thickness:0.04, maxSeg:60000, scaleDecay:0.90, rules:bushRules},
+           {name:'Spiral tree (roll)', axiom:'X', iters:6, angle:20, step:1, thickness:0.03, maxSeg:80000, scaleDecay:0.93, rules:spiralRules}
+       ];
+   }
+
+   const PRESETS = buildPresets();
+
+   const presetSel = $('preset');
+   for(let i=0;i<PRESETS.length;i++){
+       const opt = document.createElement('option');
+       opt.value = String(i);
+       opt.textContent = PRESETS[i].name;
+       presetSel.appendChild(opt);
+   }
+
+   function applyPreset(idx){
+       const p = PRESETS[idx];
+       $('axiom').value = p.axiom;
+       $('iters').value = String(p.iters);
+       $('angle').value = String(p.angle);
+       $('step').value = String(p.step);
+       $('thickness').value = String(p.thickness);
+       $('maxSeg').value = String(p.maxSeg);
+       $('scaleDecay').value = String(p.scaleDecay);
+       $('rules').value = p.rules;
+   }
+
+   presetSel.addEventListener('change', () => { applyPreset(parseInt(presetSel.value, 10) || 0); generate(); });
+   applyPreset(0);
+
+   function parseRules(text){
+       const cleaned = text.split(CR).join('');
+       const lines = cleaned.split(NL);
+       const rules = new Map();
+       for(let i=0;i<lines.length;i++){
+           const line = lines[i].trim();
+           if(!line) continue;
+           const eq = line.indexOf('=');
+           if(eq <= 0) continue;
+           const k = line.slice(0, eq).trim();
+           const v = line.slice(eq+1);
+           rules.set(k, v);
+       }
+       return rules;
+   }
+
+   function expandLSystem(axiom, rules, iterations, maxLen){
+       let s = axiom;
+       const keys = Array.from(rules.keys()).sort((a,b)=>b.length-a.length);
+       for(let it=0; it<iterations; it++){
+           let out = '';
+           for(let pos=0; pos<s.length; ){
+               let matched = false;
+               for(let j=0;j<keys.length;j++){
+                   const k = keys[j];
+                   if(k.length===1){
+                       const ch = s[pos];
+                       const r = rules.get(ch);
+                       if(r !== undefined){ out += r; matched = true; pos++; break; }
+                   } else {
+                       if(s.slice(pos, pos+k.length) === k){ out += rules.get(k); matched = true; pos += k.length; break; }
+                   }
+               }
+               if(!matched){ out += s[pos]; pos++; }
+               if(out.length > maxLen) throw new Error('Expansion too long. Reduce iterations.');
+           }
+           s = out;
+       }
+       return s;
+   }
+
+   function turtleInterpret(str, opts){
+       const angleRad = THREE.MathUtils.degToRad(opts.angleDeg);
+       const step = opts.step;
+       const maxSeg = opts.maxSeg;
+       const scaleDecay = opts.scaleDecay;
+
+       let pos = new THREE.Vector3(0,0,0);
+       let quat = new THREE.Quaternion();
+       let scale = 1.0;
+       let depth = 0;
+
+       const stack = [];
+       const segments = [];
+       const instances = [];
+
+       const forward = new THREE.Vector3(0,1,0);
+       const yawAxis = new THREE.Vector3(0,0,1);
+       const pitchAxis = new THREE.Vector3(1,0,0);
+       const rollAxis = new THREE.Vector3(0,1,0);
+
+       function rot(axisLocal, rad){
+           const axisWorld = axisLocal.clone().applyQuaternion(quat);
+           const dq = new THREE.Quaternion().setFromAxisAngle(axisWorld, rad);
+           quat.multiply(dq);
+       }
+
+       let drawn = 0;
+       for(let i=0;i<str.length;i++){
+           const c = str[i];
+           if(c === 'F' || c === 'f'){
+               const dirV = forward.clone().applyQuaternion(quat);
+               const newPos = pos.clone().addScaledVector(dirV, step*scale);
+               if(c === 'F'){
+                   segments.push({a: pos.clone(), b: newPos.clone(), s: scale, depth: depth});
+                   drawn++;
+                   if(drawn >= maxSeg) break;
+               }
+               pos = newPos;
+           } else if(c === '+') rot(yawAxis, +angleRad);
+           else if(c === '-') rot(yawAxis, -angleRad);
+           else if(c === '&') rot(pitchAxis, +angleRad);
+           else if(c === '^') rot(pitchAxis, -angleRad);
+           else if(c === BS) rot(rollAxis, +angleRad);
+           else if(c === '/') rot(rollAxis, -angleRad);
+           else if(c === '|') rot(yawAxis, Math.PI);
+           else if(c === '['){ stack.push({pos:pos.clone(), quat:quat.clone(), scale:scale, depth:depth}); scale *= scaleDecay; depth += 1; }
+           else if(c === ']'){
+               const st = stack.pop();
+               if(st){ pos = st.pos; quat = st.quat; scale = st.scale; depth = st.depth; }
+           } else if(c === 'L') instances.push({type:'leaf', pos:pos.clone(), quat:quat.clone(), scale:scale, depth:depth, t:i/str.length});
+           else if(c === 'B') instances.push({type:'bud', pos:pos.clone(), quat:quat.clone(), scale:scale, depth:depth, t:i/str.length});
+           else if(c === '*') instances.push({type:'flower', pos:pos.clone(), quat:quat.clone(), scale:scale, depth:depth, t:i/str.length});
+       }
+       return {segments:segments, instances:instances, segCount:drawn};
+   }
+
+   function computeTipsFromSegments(segments, eps){
+       const inv = 1.0 / eps;
+       const outdeg = new Map();
+       const posByKey = new Map();
+
+       function keyOf(v){
+           const x = Math.round(v.x * inv);
+           const y = Math.round(v.y * inv);
+           const z = Math.round(v.z * inv);
+           return String(x) + '_' + String(y) + '_' + String(z);
+       }
+
+       for(let i=0;i<segments.length;i++){
+           const s = segments[i];
+           const aK = keyOf(s.a);
+           const bK = keyOf(s.b);
+           posByKey.set(aK, s.a);
+           posByKey.set(bK, s.b);
+           outdeg.set(aK, (outdeg.get(aK) || 0) + 1);
+           if(!outdeg.has(bK)) outdeg.set(bK, 0);
+       }
+
+       const tips = [];
+       for(const kv of outdeg.entries()){
+           const k = kv[0];
+           const deg = kv[1];
+           if(deg === 0) tips.push(posByKey.get(k));
+       }
+       return tips;
+   }
+
+   function sampleAlongSegments(segments, everyN){
+       const pts = [];
+       for(let i=0;i<segments.length;i+=everyN){
+           const s = segments[i];
+           pts.push(s.a.clone().lerp(s.b, 0.8));
+       }
+       return pts;
+   }
+
+   function autoPlaceInstances(segments, rng, params){
+       const tips = computeTipsFromSegments(segments, 0.00001);
+       const along = params.tipsOnly ? [] : sampleAlongSegments(segments, 7);
+       const candidates = tips.concat(along);
+
+       const out = [];
+       for(let i=0;i<candidates.length;i++){
+           const p = candidates[i];
+           const yaw = (rng.next()*2-1) * Math.PI;
+           const tilt = (rng.next()*2-1) * 0.6;
+           const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(tilt, yaw, 0, 'XYZ'));
+
+           const r = rng.next();
+           if(r < params.flowerProb) out.push({type:'flower', pos:p.clone(), quat:q, scale:1, depth:3, t:0});
+           else if(r < params.flowerProb + params.budProb) out.push({type:'bud', pos:p.clone(), quat:q, scale:1, depth:3, t:0});
+           else if(r < params.flowerProb + params.budProb + params.leafProb) out.push({type:'leaf', pos:p.clone(), quat:q, scale:1, depth:3, t:0});
+       }
+       return out;
+   }
+
+   // Three.js setup
+   const canvas = $('canvas');
+   let renderer;
+   try { renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true, alpha:false}); }
+   catch(err){ hudShow('Failed to create WebGL renderer.' + NL + String(err)); throw err; }
+
+   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+
+   const scene = new THREE.Scene();
+   scene.background = new THREE.Color(0x0b0f14);
+
+   const camera = new THREE.PerspectiveCamera(55, 1, 0.01, 2000);
+   camera.position.set(6, 7, 10);
+
+   const controls = new OrbitControls(camera, renderer.domElement);
+   controls.enableDamping = true;
+   controls.dampingFactor = 0.06;
+   controls.target.set(0, 3, 0);
+
+   const grid = new THREE.GridHelper(40, 40, 0x223046, 0x223046);
+   scene.add(grid);
+
+   const ambient = new THREE.AmbientLight(0xffffff, 0.55);
+   const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+   dirLight.position.set(8, 12, 6);
+   scene.add(ambient);
+   scene.add(dirLight);
+
+   let lightsEnabled = true;
+
+   const root = new THREE.Group();
+   const branchGroup = new THREE.Group();
+   const instGroup = new THREE.Group();
+   root.add(branchGroup);
+   root.add(instGroup);
+   scene.add(root);
+
+   let branchMesh = null;
+   let leafMesh = null;
+   let budMesh = null;
+   let flowerMesh = null;
+
+   let lastGenerated = null;
+   let baseBranchMatrices = null;
+   let baseInstanceMatrices = null;
+
+   function clearSceneGeometry(){
+       if(branchMesh){
+           branchGroup.remove(branchMesh);
+           if(branchMesh.geometry) branchMesh.geometry.dispose();
+           if(branchMesh.material) branchMesh.material.dispose();
+           branchMesh = null;
+       }
+       const arr = [leafMesh, budMesh, flowerMesh];
+       for(let i=0;i<arr.length;i++){
+           const m = arr[i];
+           if(m){
+               instGroup.remove(m);
+               if(m.geometry) m.geometry.dispose();
+               if(m.material) m.material.dispose();
+           }
+       }
+       leafMesh = null; budMesh = null; flowerMesh = null;
+       lastGenerated = null;
+       baseBranchMatrices = null;
+       baseInstanceMatrices = null;
+       root.position.set(0,0,0);
+   }
+
+   function frameObject(obj){
+       const box = new THREE.Box3().setFromObject(obj);
+       if(!isFinite(box.min.x) || box.isEmpty()) return;
+       const size = new THREE.Vector3();
+       const center = new THREE.Vector3();
+       box.getSize(size);
+       box.getCenter(center);
+
+       const maxDim = Math.max(size.x, size.y, size.z);
+       const fov = THREE.MathUtils.degToRad(camera.fov);
+       let dist = maxDim / (2 * Math.tan(fov/2));
+       dist *= 1.35;
+
+       const dirVec = new THREE.Vector3(1, 0.9, 1).normalize();
+       camera.position.copy(center.clone().addScaledVector(dirVec, dist));
+       controls.target.copy(center);
+       camera.near = Math.max(0.01, dist/200);
+       camera.far = dist*20;
+       camera.updateProjectionMatrix();
+       controls.update();
+   }
+
+   function buildLines(segments){
+       const positions = new Float32Array(segments.length * 2 * 3);
+       for(let i=0;i<segments.length;i++){
+           const s = segments[i];
+           const off = i*6;
+           positions[off+0]=s.a.x; positions[off+1]=s.a.y; positions[off+2]=s.a.z;
+           positions[off+3]=s.b.x; positions[off+4]=s.b.y; positions[off+5]=s.b.z;
+       }
+       const geom = new THREE.BufferGeometry();
+       geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+       geom.computeBoundingSphere();
+       const mat = new THREE.LineBasicMaterial({color:0x5eead4});
+       return new THREE.LineSegments(geom, mat);
+   }
+
+   function buildInstancedCylinders(segments, baseRadius){
+       const cyl = new THREE.CylinderGeometry(baseRadius, baseRadius, 1, 8, 1, true);
+       cyl.translate(0, 0.5, 0);
+       const mat = new THREE.MeshStandardMaterial({color:0x5eead4, roughness:0.55, metalness:0.05});
+       const mesh = new THREE.InstancedMesh(cyl, mat, segments.length);
+       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+
+       const tmpMat = new THREE.Matrix4();
+       const tmpQuat = new THREE.Quaternion();
+       const tmpPos = new THREE.Vector3();
+       const tmpScale = new THREE.Vector3();
+       const yAxis = new THREE.Vector3(0,1,0);
+
+       baseBranchMatrices = new Array(segments.length);
+
+       for(let i=0;i<segments.length;i++){
+           const s = segments[i];
+           const dirV = s.b.clone().sub(s.a);
+           const len = dirV.length();
+           if(len < 0.000001){
+               tmpMat.identity();
+               mesh.setMatrixAt(i, tmpMat);
+               baseBranchMatrices[i] = tmpMat.clone();
+               continue;
+           }
+           dirV.normalize();
+           tmpQuat.setFromUnitVectors(yAxis, dirV);
+           tmpPos.copy(s.a);
+           tmpScale.set(1, len, 1);
+           const radiusScale = Math.max(0.15, s.s);
+           tmpScale.multiply(new THREE.Vector3(radiusScale, 1, radiusScale));
+           tmpMat.compose(tmpPos, tmpQuat, tmpScale);
+           mesh.setMatrixAt(i, tmpMat);
+           baseBranchMatrices[i] = tmpMat.clone();
+       }
+       return mesh;
+   }
+
+   function buildInstancedQuads(items, baseSize, kind){
+       const geom = new THREE.PlaneGeometry(1, 1);
+       const col = kind==='leaf' ? 0x34d399 : (kind==='bud' ? 0xfbbf24 : 0xfb7185);
+       const mat = new THREE.MeshStandardMaterial({color:col, roughness:0.8, metalness:0.0, side:THREE.DoubleSide});
+       const mesh = new THREE.InstancedMesh(geom, mat, items.length);
+       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+
+       const tmpMat = new THREE.Matrix4();
+       const tmpPos = new THREE.Vector3();
+       const tmpScale = new THREE.Vector3();
+       const tmpQuat = new THREE.Quaternion();
+
+       const bases = [];
+       for(let i=0;i<items.length;i++){
+           const it = items[i];
+           tmpPos.copy(it.pos);
+           tmpQuat.copy(it.quat);
+           const s = baseSize * it.scale;
+           if(kind==='leaf') tmpScale.set(s*0.55, s*1.15, 1);
+           else if(kind==='bud') tmpScale.set(s*0.65, s*0.65, 1);
+           else tmpScale.set(s*1.0, s*1.0, 1);
+           tmpMat.compose(tmpPos, tmpQuat, tmpScale);
+           mesh.setMatrixAt(i, tmpMat);
+           bases.push(tmpMat.clone());
+       }
+       return {mesh:mesh, baseMatrices:bases};
+   }
+
+   // Wind
+   const tmpMatA = new THREE.Matrix4();
+   const tmpPosA = new THREE.Vector3();
+   const tmpQuatA = new THREE.Quaternion();
+   const tmpScaleA = new THREE.Vector3();
+   const windAxis = new THREE.Vector3(0,0,1);
+
+   function applyWindToBranches(t, strength, speed){
+       if(!branchMesh) return;
+       if(!(branchMesh instanceof THREE.InstancedMesh)) return;
+       if(!baseBranchMatrices) return;
+
+       for(let i=0;i<baseBranchMatrices.length;i++){
+           tmpMatA.copy(baseBranchMatrices[i]);
+           tmpMatA.decompose(tmpPosA, tmpQuatA, tmpScaleA);
+           const depthFactor = 1 - Math.min(1, (tmpScaleA.x - 0.15) / 1.0);
+           const phase = i * 0.07;
+           const sway = strength * (0.15 + 0.85*depthFactor) * Math.sin(t*speed + phase);
+           const dq = new THREE.Quaternion().setFromAxisAngle(windAxis, sway);
+           tmpQuatA.multiply(dq);
+           tmpMatA.compose(tmpPosA, tmpQuatA, tmpScaleA);
+           branchMesh.setMatrixAt(i, tmpMatA);
+       }
+       branchMesh.instanceMatrix.needsUpdate = true;
+   }
+
+   function applyWindToInstances(t, strength, speed){
+       function apply(mesh, bases, mul){
+           if(!mesh || !bases) return;
+           for(let i=0;i<bases.length;i++){
+               tmpMatA.copy(bases[i]);
+               tmpMatA.decompose(tmpPosA, tmpQuatA, tmpScaleA);
+               const phase = i * 0.11;
+               const sway = strength * mul * Math.sin(t*speed*1.4 + phase);
+               const dq = new THREE.Quaternion().setFromAxisAngle(windAxis, sway);
+               tmpQuatA.multiply(dq);
+               tmpMatA.compose(tmpPosA, tmpQuatA, tmpScaleA);
+               mesh.setMatrixAt(i, tmpMatA);
+           }
+           mesh.instanceMatrix.needsUpdate = true;
+       }
+       apply(leafMesh, baseInstanceMatrices ? baseInstanceMatrices.leaf : null, 1.2);
+       apply(budMesh, baseInstanceMatrices ? baseInstanceMatrices.bud : null, 0.8);
+       apply(flowerMesh, baseInstanceMatrices ? baseInstanceMatrices.flower : null, 1.6);
+   }
+
+   function generate(){
+       try{
+           hudHide();
+           log('Generating…');
+           clearSceneGeometry();
+
+           const axiom = $('axiom').value;
+           const rulesText = $('rules').value;
+           if(!axiom) throw new Error('Axiom is empty.');
+           if(!rulesText) throw new Error('Rules are empty. Select a preset or add rules.');
+
+           const iters = Math.max(0, Math.min(10, parseInt($('iters').value, 10) || 0));
+           const angleDeg = parseFloat($('angle').value) || 25;
+           const step = parseFloat($('step').value) || 1;
+           const thickness = parseFloat($('thickness').value) || 0.02;
+           const maxSeg = parseInt($('maxSeg').value, 10) || 60000;
+           const scaleDecay = Math.min(1, Math.max(0, parseFloat($('scaleDecay').value) || 0.9));
+
+           const params = {
+               windStrength: parseFloat($('windStrength').value) || 0,
+               windSpeed: parseFloat($('windSpeed').value) || 1,
+               leafProb: Math.min(1, Math.max(0, parseFloat($('leafProb').value) || 0)),
+               budProb: Math.min(1, Math.max(0, parseFloat($('budProb').value) || 0)),
+               flowerProb: Math.min(1, Math.max(0, parseFloat($('flowerProb').value) || 0)),
+               instSize: Math.max(0.001, parseFloat($('instSize').value) || 0.06),
+               tipsOnly: $('tipsOnly').value === '1',
+               seed: parseInt($('seed').value, 10) || 1
+           };
+
+           const rules = parseRules(rulesText);
+           if(rules.size === 0) throw new Error('No valid rules parsed. Use lines like F=FF or X=F[+X]F[-X]+X.');
+
+           const expanded = expandLSystem(axiom, rules, iters, 2000000);
+           const interp = turtleInterpret(expanded, {angleDeg:angleDeg, step:step, maxSeg:maxSeg, scaleDecay:scaleDecay});
+
+           const segments = interp.segments;
+           if(segments.length === 0) throw new Error('No segments produced. Make sure rules generate F at some point.');
+
+           const rng = makeRng(params.seed);
+           let instances = interp.instances;
+           if(instances.length === 0 && (params.leafProb + params.budProb + params.flowerProb) > 0){
+               instances = autoPlaceInstances(segments, rng, params);
+           }
+
+           if(thickness <= 0.02){
+               branchMesh = buildLines(segments);
+           } else {
+               branchMesh = buildInstancedCylinders(segments, thickness);
+           }
+           branchGroup.add(branchMesh);
+
+           const leafs = instances.filter(x=>x.type==='leaf');
+           const buds = instances.filter(x=>x.type==='bud');
+           const flowers = instances.filter(x=>x.type==='flower');
+
+           baseInstanceMatrices = {leaf:null, bud:null, flower:null};
+
+           if(leafs.length){
+               const built = buildInstancedQuads(leafs, params.instSize, 'leaf');
+               leafMesh = built.mesh; baseInstanceMatrices.leaf = built.baseMatrices;
+               instGroup.add(leafMesh);
+           }
+           if(buds.length){
+               const built = buildInstancedQuads(buds, params.instSize*0.9, 'bud');
+               budMesh = built.mesh; baseInstanceMatrices.bud = built.baseMatrices;
+               instGroup.add(budMesh);
+           }
+           if(flowers.length){
+               const built = buildInstancedQuads(flowers, params.instSize*1.1, 'flower');
+               flowerMesh = built.mesh; baseInstanceMatrices.flower = built.baseMatrices;
+               instGroup.add(flowerMesh);
+           }
+
+           // Center on origin & floor to y=0
+           // IMPORTANT: do NOT re-parent branchGroup/instGroup into a temp group (it would detach them from root).
+           // Instead, compute bounds directly from root.
+           const box = new THREE.Box3().setFromObject(root);
+           if(!box.isEmpty()){
+               const center = new THREE.Vector3();
+               box.getCenter(center);
+               root.position.sub(center);
+               // Recompute after centering to floor at y=0
+               const box2 = new THREE.Box3().setFromObject(root);
+               root.position.y -= box2.min.y;
+           }
+
+           frameObject(root);
+
+           lastGenerated = {segments:segments, instances:instances, expandedLength:expanded.length, params:params};
+           log('OK: expanded length=' + String(expanded.length) + ' | segments=' + String(segments.length) + ' | instances=' + String(instances.length));
+       } catch(e){
+           console.error(e);
+           const msg = e && e.stack ? e.stack : String(e);
+           hudShow('Generate failed:' + NL + msg);
+           log('Error: ' + (e && e.message ? e.message : String(e)));
+       }
+   }
+
+   function saveTextFile(filename, text){
+       const blob = new Blob([text], {type:'application/json'});
+       const url = URL.createObjectURL(blob);
+       const a = document.createElement('a');
+       a.href = url;
+       a.download = filename;
+       a.click();
+       URL.revokeObjectURL(url);
+   }
+
+   function exportJSON(){
+       if(!lastGenerated){ log('Nothing to export.'); return; }
+       const segs = lastGenerated.segments;
+       const inst = lastGenerated.instances;
+       const out = {
+           version: 1,
+           params: lastGenerated.params,
+           expandedLength: lastGenerated.expandedLength,
+           segments: segs.map(s=>({a:[s.a.x,s.a.y,s.a.z], b:[s.b.x,s.b.y,s.b.z], scale:s.s, depth:s.depth})),
+           instances: inst.map(it=>({type:it.type, pos:[it.pos.x,it.pos.y,it.pos.z], quat:[it.quat.x,it.quat.y,it.quat.z,it.quat.w], scale:it.scale, depth:it.depth, t:it.t}))
+       };
+       saveTextFile('lsystem.json', JSON.stringify(out, null, 2));
+       log('Saved lsystem.json');
+   }
+
+   function exportGLB(){
+       const exporter = new GLTFExporter();
+       exporter.parse(
+           root,
+           (res) => {
+               const blob = new Blob([res], {type:'model/gltf-binary'});
+               const url = URL.createObjectURL(blob);
+               const a = document.createElement('a');
+               a.href = url;
+               a.download = 'lsystem.glb';
+               a.click();
+               URL.revokeObjectURL(url);
+               log('Saved lsystem.glb');
+           },
+           (err) => { console.error(err); hudShow('Export failed:' + NL + String(err)); },
+           {binary:true}
+       );
+   }
+
+   // UI events
+   $('generate').addEventListener('click', generate);
+   $('clear').addEventListener('click', () => { clearSceneGeometry(); log('Cleared.'); hudHide(); });
+   $('resetCam').addEventListener('click', () => {
+       controls.reset();
+       camera.position.set(6,7,10);
+       controls.target.set(0,3,0);
+       controls.update();
+   });
+   $('exportJSON').addEventListener('click', exportJSON);
+   $('exportGLB').addEventListener('click', exportGLB);
+
+   window.addEventListener('keydown', (e) => {
+       if((e.ctrlKey || e.metaKey) && e.key === 'Enter') generate();
+       const k = e.key ? e.key.toLowerCase() : '';
+       if(k === 'l'){
+           lightsEnabled = !lightsEnabled;
+           ambient.visible = lightsEnabled;
+           dirLight.visible = lightsEnabled;
+       }
+       if(k === 'g') grid.visible = !grid.visible;
+       if(k === 'h'){
+           const msg = [
+               'Markers: L leaf, B bud, * flower',
+               'Auto placement: if no markers present',
+               'Export JSON for runtime',
+               'Wind: use sliders'
+           ].join(NL);
+           alert(msg);
+       }
+   });
+
+   // Resize without triggering ResizeObserver loop warnings
+   function resize(){
+       const w = canvas.clientWidth || 0;
+       const h = canvas.clientHeight || 0;
+       if(w === 0 || h === 0){
+           hudShow('Canvas has zero size (width/height=0).');
+           return;
+       }
+       renderer.setSize(w, h, false);
+       camera.aspect = w / h;
+       camera.updateProjectionMatrix();
+   }
+
+   let resizeQueued = false;
+   function queueResize(){
+       if(resizeQueued) return;
+       resizeQueued = true;
+       requestAnimationFrame(() => { resizeQueued = false; resize(); });
+   }
+
+   const viewEl = document.getElementById('view');
+   if(viewEl && window.ResizeObserver){
+       const ro = new ResizeObserver(() => { queueResize(); });
+       ro.observe(viewEl);
+   }
+   window.addEventListener('resize', queueResize);
+   queueResize();
+
+   // Render loop
+   const clock = new THREE.Clock();
+   function tick(){
+       const t = clock.getElapsedTime();
+       const strength = parseFloat($('windStrength').value) || 0;
+       const speed = parseFloat($('windSpeed').value) || 1;
+       applyWindToBranches(t, strength, speed);
+       applyWindToInstances(t, strength, speed);
+       controls.update();
+       renderer.render(scene, camera);
+       requestAnimationFrame(tick);
+   }
+   tick();
+
+   // Start
+   generate();
+  </script>
+</body>
+</html>
