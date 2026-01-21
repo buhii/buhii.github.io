@@ -3,22 +3,23 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>3D L-system + Leaves/Flowers + Wind + JSON Export</title>
+  <title>3D L-system + Prototypes + Node Graph + Wind + Export</title>
   <style>
     :root{--bg:#0b0f14;--panel:#121826;--text:#e6edf3;--muted:#9fb1c5;--accent:#5eead4;--danger:#fb7185;--border:#223046;}
     html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Noto Sans JP",sans-serif;}
-    #app{display:grid;grid-template-columns:380px 1fr;height:100%;}
+    #app{display:grid;grid-template-columns:420px 1fr;height:100%;}
     #panel{background:linear-gradient(180deg,var(--panel),#0f1522);border-right:1px solid var(--border);padding:14px 14px 16px;overflow:auto;}
     #view{position:relative;min-width:0;}
     #canvas{display:block;width:100%;height:100%;}
 
     h1{font-size:16px;margin:0 0 10px;letter-spacing:.3px;}
-    .row{display:flex;gap:10px;align-items:center;margin:8px 0;}
+    .row{display:flex;gap:10px;align-items:center;margin:8px 0;flex-wrap:wrap;}
     label{font-size:12px;color:var(--muted);display:block;margin:10px 0 6px;}
     input,select,textarea,button{font:inherit;}
     textarea{width:100%;min-height:90px;resize:vertical;background:#0b1220;color:var(--text);border:1px solid var(--border);border-radius:12px;padding:10px;outline:none;}
     input[type="number"], input[type="text"], select{width:100%;background:#0b1220;color:var(--text);border:1px solid var(--border);border-radius:12px;padding:8px 10px;outline:none;}
     input[type="range"]{width:100%;}
+    input[type="color"]{width:100%;height:36px;background:#0b1220;border:1px solid var(--border);border-radius:12px;padding:4px 6px;outline:none;}
     .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
     .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
     button{border:1px solid var(--border);background:#0b1220;color:var(--text);border-radius:12px;padding:9px 10px;cursor:pointer;}
@@ -33,7 +34,20 @@
     .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
 
     #overlay{position:absolute;left:12px;top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;z-index:5;}
-    #hud{position:absolute;right:12px;top:12px;max-width:52ch;white-space:pre-wrap;background:rgba(11,18,32,.88);border:1px solid rgba(34,48,70,.8);border-radius:12px;padding:10px;display:none;z-index:6;}
+    #hud{position:absolute;right:12px;top:12px;max-width:58ch;white-space:pre-wrap;background:rgba(11,18,32,.88);border:1px solid rgba(34,48,70,.8);border-radius:12px;padding:10px;display:none;z-index:6;}
+
+    #nodeGraphWrap{height:260px;background:#0b1220;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+    #nodeGraph{display:block;width:100%;height:100%;touch-action:none;}
+    .node-rect{fill:rgba(18,24,38,.90);stroke:rgba(34,48,70,.95);stroke-width:1.2;}
+    .node-rect.sel{stroke:rgba(94,234,212,.70);stroke-width:1.6;}
+    .node-title{font-size:12px;fill:var(--text);font-weight:600}
+    .node-sub{font-size:11px;fill:var(--muted)}
+    .edge{fill:none;stroke:rgba(159,177,197,.55);stroke-width:2.0;stroke-linecap:round;}
+    .edge-hot{fill:none;stroke:transparent;stroke-width:10;cursor:pointer;}
+    .node-hot{fill:transparent;cursor:grab;}
+    .node-hot:active{cursor:grabbing;}
+
+    .svglite{width:100%;height:160px;background:#0b1220;border:1px solid var(--border);border-radius:12px;display:block}
   </style>
 </head>
 <body>
@@ -42,119 +56,39 @@
       <h1>3D L-system</h1>
       <div class="row">
         <span class="pill">Renderer: <span class="mono">Three.js</span></span>
-        <span class="pill">Export: <span class="mono">JSON</span> / <span class="mono">GLB</span></span>
+        <span class="pill">Export: <span class="mono">JSON</span> / <span class="mono">SVG</span> / <span class="mono">GLB</span></span>
       </div>
 
-      <label>Preset</label>
-      <select id="preset"></select>
+      <div class="section">
+        <label>Node graph</label>
+        <div id="nodeGraphWrap">
+          <svg id="nodeGraph" viewBox="0 0 380 260" role="img" aria-label="Node graph"></svg>
+        </div>
+        <p class="hint">Select a node to edit its parameters. Drag nodes to rearrange (visual only in v1).</p>
+      </div>
 
       <div class="section">
-        <div class="grid2">
-          <div>
-            <label>Axiom</label>
-            <input id="axiom" type="text" value="X" />
-          </div>
-          <div>
-            <label>Iterations</label>
-            <input id="iters" type="number" min="0" max="10" step="1" value="6" />
-          </div>
-        </div>
+        <label>Selected node</label>
+        <div id="nodeProps"></div>
+      </div>
 
-        <label>Rules (one per line)</label>
-        <textarea id="rules"></textarea>
-
-        <div class="grid3">
-          <div>
-            <label>Angle θ (deg)</label>
-            <input id="angle" type="number" min="0" max="180" step="1" value="25" />
-          </div>
-          <div>
-            <label>Step length</label>
-            <input id="step" type="number" min="0.01" max="10" step="0.01" value="1" />
-          </div>
-          <div>
-            <label>Thickness</label>
-            <input id="thickness" type="number" min="0.001" max="2" step="0.001" value="0.04" />
-          </div>
-        </div>
-
-        <div class="grid2">
-          <div>
-            <label>Max segments (safety)</label>
-            <input id="maxSeg" type="number" min="100" max="200000" step="100" value="60000" />
-          </div>
-          <div>
-            <label>Branch scale decay (0-1)</label>
-            <input id="scaleDecay" type="number" min="0" max="1" step="0.01" value="0.92" />
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="row" style="justify-content:space-between; align-items:flex-end;">
-            <div style="flex:1">
-              <label>Wind strength</label>
-              <input id="windStrength" type="range" min="0" max="1" step="0.01" value="0.25" />
-            </div>
-            <div style="width:90px">
-              <label>Speed</label>
-              <input id="windSpeed" type="number" min="0" max="5" step="0.05" value="1.2" />
-            </div>
-          </div>
-
-          <div class="grid2">
-            <div>
-              <label>Leaf prob (auto)</label>
-              <input id="leafProb" type="number" min="0" max="1" step="0.01" value="0.35" />
-            </div>
-            <div>
-              <label>Flower prob (auto)</label>
-              <input id="flowerProb" type="number" min="0" max="1" step="0.01" value="0.03" />
-            </div>
-          </div>
-          <div class="grid2">
-            <div>
-              <label>Bud prob (auto)</label>
-              <input id="budProb" type="number" min="0" max="1" step="0.01" value="0.10" />
-            </div>
-            <div>
-              <label>Instance size</label>
-              <input id="instSize" type="number" min="0.005" max="1" step="0.005" value="0.06" />
-            </div>
-          </div>
-          <div class="grid2">
-            <div>
-              <label>Seed</label>
-              <input id="seed" type="number" min="0" max="999999" step="1" value="12345" />
-            </div>
-            <div>
-              <label>Place at tips only</label>
-              <select id="tipsOnly">
-                <option value="1" selected>Yes</option>
-                <option value="0">No (also along branches)</option>
-              </select>
-            </div>
-          </div>
-
-          <p class="hint">
-            Markers you can put in the grammar: <span class="mono">L</span>=leaf, <span class="mono">B</span>=bud, <span class="mono">*</span>=flower.
-            If you don’t use markers, auto placement uses the probabilities above.
-          </p>
-        </div>
-
-        <div class="row" style="margin-top:12px;">
+      <div class="section">
+        <div class="row" style="margin-top:0;">
           <button id="generate" class="primary" style="flex:1">Generate (Ctrl/Command + Enter)</button>
           <button id="resetCam" style="width:120px">Reset camera</button>
         </div>
         <div class="row">
           <button id="exportJSON" style="flex:1">Export JSON</button>
+          <button id="exportSVG" style="flex:1">Export SVG</button>
           <button id="exportGLB" style="flex:1">Export GLB</button>
         </div>
         <div class="row">
           <button id="clear" class="danger" style="flex:1">Clear</button>
         </div>
-
         <p class="hint">
-          Turtle: F draw, f move, +/ - yaw, &amp; / ^ pitch, slash roll negative, (positive roll uses the backslash key), | 180 deg, [ ] branch.
+          Turtle: <span class="mono">F</span> draw, <span class="mono">f</span> move, <span class="mono">+</span>/<span class="mono">-</span> yaw,
+          <span class="mono">&amp;</span>/<span class="mono">^</span> pitch, <span class="mono">/</span> roll-, <span class="mono">\</span> roll+,
+          <span class="mono">|</span> 180°, <span class="mono">[ ]</span> branch. Markers: <span class="mono">L</span> leaf, <span class="mono">B</span> bud, <span class="mono">*</span> flower.
         </p>
       </div>
 
@@ -185,680 +119,1602 @@
   </script>
 
   <script type="module">
-   import * as THREE from 'three';
-   import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-   import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
-
-   const NL = String.fromCharCode(10);
-   const CR = String.fromCharCode(13);
-   const BS = String.fromCharCode(92);
-
-   const $ = (id) => document.getElementById(id);
-   const logEl = $('log');
-   const hudEl = $('hud');
-
-   function log(msg){ logEl.textContent = msg; }
-   function hudShow(msg){ hudEl.style.display='block'; hudEl.textContent = msg; }
-   function hudHide(){ hudEl.style.display='none'; hudEl.textContent = ''; }
-
-   window.addEventListener('error', (e) => {
-       const m = e && e.message ? e.message : '';
-       if(m && m.indexOf('ResizeObserver loop') >= 0) return;
-       const msg = (e && e.error && e.error.stack) ? e.error.stack : (m || String(e));
-       hudShow('Runtime error:' + NL + msg);
-   });
-   window.addEventListener('unhandledrejection', (e) => {
-       const msg = (e && e.reason && e.reason.stack) ? e.reason.stack : String(e.reason);
-       hudShow('Unhandled promise rejection:' + NL + msg);
-   });
-
-   function makeRng(seed){
-       let s = (seed >>> 0) || 1;
-       return {
-           next(){ s = (1664525 * s + 1013904223) >>> 0; return s / 4294967296; }
-       };
-   }
-
-   function buildPresets(){
-       const plantRules = [
-           'X=F[+X]F[-X]+XLB*',
-           'F=FF'
-       ].join(NL);
-
-       const bushRules = [
-           'F=F[+F]F[-F]F'
-       ].join(NL);
-
-       const spiralRules = [
-           'X=F[+X][/X][' + BS + 'X][-X]FX',
-           'F=FF'
-       ].join(NL);
-
-       return [
-           {name:'Plant (markers L/B/*)', axiom:'X', iters:6, angle:25, step:1, thickness:0.04, maxSeg:60000, scaleDecay:0.92, rules:plantRules},
-           {name:'Bush (auto placement)', axiom:'F', iters:5, angle:22, step:1, thickness:0.04, maxSeg:60000, scaleDecay:0.90, rules:bushRules},
-           {name:'Spiral tree (roll)', axiom:'X', iters:6, angle:20, step:1, thickness:0.03, maxSeg:80000, scaleDecay:0.93, rules:spiralRules}
-       ];
-   }
-
-   const PRESETS = buildPresets();
-
-   const presetSel = $('preset');
-   for(let i=0;i<PRESETS.length;i++){
-       const opt = document.createElement('option');
-       opt.value = String(i);
-       opt.textContent = PRESETS[i].name;
-       presetSel.appendChild(opt);
-   }
-
-   function applyPreset(idx){
-       const p = PRESETS[idx];
-       $('axiom').value = p.axiom;
-       $('iters').value = String(p.iters);
-       $('angle').value = String(p.angle);
-       $('step').value = String(p.step);
-       $('thickness').value = String(p.thickness);
-       $('maxSeg').value = String(p.maxSeg);
-       $('scaleDecay').value = String(p.scaleDecay);
-       $('rules').value = p.rules;
-   }
-
-   presetSel.addEventListener('change', () => { applyPreset(parseInt(presetSel.value, 10) || 0); generate(); });
-   applyPreset(0);
-
-   function parseRules(text){
-       const cleaned = text.split(CR).join('');
-       const lines = cleaned.split(NL);
-       const rules = new Map();
-       for(let i=0;i<lines.length;i++){
-           const line = lines[i].trim();
-           if(!line) continue;
-           const eq = line.indexOf('=');
-           if(eq <= 0) continue;
-           const k = line.slice(0, eq).trim();
-           const v = line.slice(eq+1);
-           rules.set(k, v);
-       }
-       return rules;
-   }
-
-   function expandLSystem(axiom, rules, iterations, maxLen){
-       let s = axiom;
-       const keys = Array.from(rules.keys()).sort((a,b)=>b.length-a.length);
-       for(let it=0; it<iterations; it++){
-           let out = '';
-           for(let pos=0; pos<s.length; ){
-               let matched = false;
-               for(let j=0;j<keys.length;j++){
-                   const k = keys[j];
-                   if(k.length===1){
-                       const ch = s[pos];
-                       const r = rules.get(ch);
-                       if(r !== undefined){ out += r; matched = true; pos++; break; }
-                   } else {
-                       if(s.slice(pos, pos+k.length) === k){ out += rules.get(k); matched = true; pos += k.length; break; }
-                   }
-               }
-               if(!matched){ out += s[pos]; pos++; }
-               if(out.length > maxLen) throw new Error('Expansion too long. Reduce iterations.');
-           }
-           s = out;
-       }
-       return s;
-   }
-
-   function turtleInterpret(str, opts){
-       const angleRad = THREE.MathUtils.degToRad(opts.angleDeg);
-       const step = opts.step;
-       const maxSeg = opts.maxSeg;
-       const scaleDecay = opts.scaleDecay;
-
-       let pos = new THREE.Vector3(0,0,0);
-       let quat = new THREE.Quaternion();
-       let scale = 1.0;
-       let depth = 0;
-
-       const stack = [];
-       const segments = [];
-       const instances = [];
-
-       const forward = new THREE.Vector3(0,1,0);
-       const yawAxis = new THREE.Vector3(0,0,1);
-       const pitchAxis = new THREE.Vector3(1,0,0);
-       const rollAxis = new THREE.Vector3(0,1,0);
-
-       function rot(axisLocal, rad){
-           const axisWorld = axisLocal.clone().applyQuaternion(quat);
-           const dq = new THREE.Quaternion().setFromAxisAngle(axisWorld, rad);
-           quat.multiply(dq);
-       }
-
-       let drawn = 0;
-       for(let i=0;i<str.length;i++){
-           const c = str[i];
-           if(c === 'F' || c === 'f'){
-               const dirV = forward.clone().applyQuaternion(quat);
-               const newPos = pos.clone().addScaledVector(dirV, step*scale);
-               if(c === 'F'){
-                   segments.push({a: pos.clone(), b: newPos.clone(), s: scale, depth: depth});
-                   drawn++;
-                   if(drawn >= maxSeg) break;
-               }
-               pos = newPos;
-           } else if(c === '+') rot(yawAxis, +angleRad);
-           else if(c === '-') rot(yawAxis, -angleRad);
-           else if(c === '&') rot(pitchAxis, +angleRad);
-           else if(c === '^') rot(pitchAxis, -angleRad);
-           else if(c === BS) rot(rollAxis, +angleRad);
-           else if(c === '/') rot(rollAxis, -angleRad);
-           else if(c === '|') rot(yawAxis, Math.PI);
-           else if(c === '['){ stack.push({pos:pos.clone(), quat:quat.clone(), scale:scale, depth:depth}); scale *= scaleDecay; depth += 1; }
-           else if(c === ']'){
-               const st = stack.pop();
-               if(st){ pos = st.pos; quat = st.quat; scale = st.scale; depth = st.depth; }
-           } else if(c === 'L') instances.push({type:'leaf', pos:pos.clone(), quat:quat.clone(), scale:scale, depth:depth, t:i/str.length});
-           else if(c === 'B') instances.push({type:'bud', pos:pos.clone(), quat:quat.clone(), scale:scale, depth:depth, t:i/str.length});
-           else if(c === '*') instances.push({type:'flower', pos:pos.clone(), quat:quat.clone(), scale:scale, depth:depth, t:i/str.length});
-       }
-       return {segments:segments, instances:instances, segCount:drawn};
-   }
-
-   function computeTipsFromSegments(segments, eps){
-       const inv = 1.0 / eps;
-       const outdeg = new Map();
-       const posByKey = new Map();
-
-       function keyOf(v){
-           const x = Math.round(v.x * inv);
-           const y = Math.round(v.y * inv);
-           const z = Math.round(v.z * inv);
-           return String(x) + '_' + String(y) + '_' + String(z);
-       }
-
-       for(let i=0;i<segments.length;i++){
-           const s = segments[i];
-           const aK = keyOf(s.a);
-           const bK = keyOf(s.b);
-           posByKey.set(aK, s.a);
-           posByKey.set(bK, s.b);
-           outdeg.set(aK, (outdeg.get(aK) || 0) + 1);
-           if(!outdeg.has(bK)) outdeg.set(bK, 0);
-       }
-
-       const tips = [];
-       for(const kv of outdeg.entries()){
-           const k = kv[0];
-           const deg = kv[1];
-           if(deg === 0) tips.push(posByKey.get(k));
-       }
-       return tips;
-   }
-
-   function sampleAlongSegments(segments, everyN){
-       const pts = [];
-       for(let i=0;i<segments.length;i+=everyN){
-           const s = segments[i];
-           pts.push(s.a.clone().lerp(s.b, 0.8));
-       }
-       return pts;
-   }
-
-   function autoPlaceInstances(segments, rng, params){
-       const tips = computeTipsFromSegments(segments, 0.00001);
-       const along = params.tipsOnly ? [] : sampleAlongSegments(segments, 7);
-       const candidates = tips.concat(along);
-
-       const out = [];
-       for(let i=0;i<candidates.length;i++){
-           const p = candidates[i];
-           const yaw = (rng.next()*2-1) * Math.PI;
-           const tilt = (rng.next()*2-1) * 0.6;
-           const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(tilt, yaw, 0, 'XYZ'));
-
-           const r = rng.next();
-           if(r < params.flowerProb) out.push({type:'flower', pos:p.clone(), quat:q, scale:1, depth:3, t:0});
-           else if(r < params.flowerProb + params.budProb) out.push({type:'bud', pos:p.clone(), quat:q, scale:1, depth:3, t:0});
-           else if(r < params.flowerProb + params.budProb + params.leafProb) out.push({type:'leaf', pos:p.clone(), quat:q, scale:1, depth:3, t:0});
-       }
-       return out;
-   }
-
-   // Three.js setup
-   const canvas = $('canvas');
-   let renderer;
-   try { renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true, alpha:false}); }
-   catch(err){ hudShow('Failed to create WebGL renderer.' + NL + String(err)); throw err; }
-
-   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-
-   const scene = new THREE.Scene();
-   scene.background = new THREE.Color(0x0b0f14);
-
-   const camera = new THREE.PerspectiveCamera(55, 1, 0.01, 2000);
-   camera.position.set(6, 7, 10);
-
-   const controls = new OrbitControls(camera, renderer.domElement);
-   controls.enableDamping = true;
-   controls.dampingFactor = 0.06;
-   controls.target.set(0, 3, 0);
-
-   const grid = new THREE.GridHelper(40, 40, 0x223046, 0x223046);
-   scene.add(grid);
-
-   const ambient = new THREE.AmbientLight(0xffffff, 0.55);
-   const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
-   dirLight.position.set(8, 12, 6);
-   scene.add(ambient);
-   scene.add(dirLight);
-
-   let lightsEnabled = true;
-
-   const root = new THREE.Group();
-   const branchGroup = new THREE.Group();
-   const instGroup = new THREE.Group();
-   root.add(branchGroup);
-   root.add(instGroup);
-   scene.add(root);
-
-   let branchMesh = null;
-   let leafMesh = null;
-   let budMesh = null;
-   let flowerMesh = null;
-
-   let lastGenerated = null;
-   let baseBranchMatrices = null;
-   let baseInstanceMatrices = null;
-
-   function clearSceneGeometry(){
-       if(branchMesh){
-           branchGroup.remove(branchMesh);
-           if(branchMesh.geometry) branchMesh.geometry.dispose();
-           if(branchMesh.material) branchMesh.material.dispose();
-           branchMesh = null;
-       }
-       const arr = [leafMesh, budMesh, flowerMesh];
-       for(let i=0;i<arr.length;i++){
-           const m = arr[i];
-           if(m){
-               instGroup.remove(m);
-               if(m.geometry) m.geometry.dispose();
-               if(m.material) m.material.dispose();
-           }
-       }
-       leafMesh = null; budMesh = null; flowerMesh = null;
-       lastGenerated = null;
-       baseBranchMatrices = null;
-       baseInstanceMatrices = null;
-       root.position.set(0,0,0);
-   }
-
-   function frameObject(obj){
-       const box = new THREE.Box3().setFromObject(obj);
-       if(!isFinite(box.min.x) || box.isEmpty()) return;
-       const size = new THREE.Vector3();
-       const center = new THREE.Vector3();
-       box.getSize(size);
-       box.getCenter(center);
-
-       const maxDim = Math.max(size.x, size.y, size.z);
-       const fov = THREE.MathUtils.degToRad(camera.fov);
-       let dist = maxDim / (2 * Math.tan(fov/2));
-       dist *= 1.35;
-
-       const dirVec = new THREE.Vector3(1, 0.9, 1).normalize();
-       camera.position.copy(center.clone().addScaledVector(dirVec, dist));
-       controls.target.copy(center);
-       camera.near = Math.max(0.01, dist/200);
-       camera.far = dist*20;
-       camera.updateProjectionMatrix();
-       controls.update();
-   }
-
-   function buildLines(segments){
-       const positions = new Float32Array(segments.length * 2 * 3);
-       for(let i=0;i<segments.length;i++){
-           const s = segments[i];
-           const off = i*6;
-           positions[off+0]=s.a.x; positions[off+1]=s.a.y; positions[off+2]=s.a.z;
-           positions[off+3]=s.b.x; positions[off+4]=s.b.y; positions[off+5]=s.b.z;
-       }
-       const geom = new THREE.BufferGeometry();
-       geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-       geom.computeBoundingSphere();
-       const mat = new THREE.LineBasicMaterial({color:0x5eead4});
-       return new THREE.LineSegments(geom, mat);
-   }
-
-   function buildInstancedCylinders(segments, baseRadius){
-       const cyl = new THREE.CylinderGeometry(baseRadius, baseRadius, 1, 8, 1, true);
-       cyl.translate(0, 0.5, 0);
-       const mat = new THREE.MeshStandardMaterial({color:0x5eead4, roughness:0.55, metalness:0.05});
-       const mesh = new THREE.InstancedMesh(cyl, mat, segments.length);
-       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-
-       const tmpMat = new THREE.Matrix4();
-       const tmpQuat = new THREE.Quaternion();
-       const tmpPos = new THREE.Vector3();
-       const tmpScale = new THREE.Vector3();
-       const yAxis = new THREE.Vector3(0,1,0);
-
-       baseBranchMatrices = new Array(segments.length);
-
-       for(let i=0;i<segments.length;i++){
-           const s = segments[i];
-           const dirV = s.b.clone().sub(s.a);
-           const len = dirV.length();
-           if(len < 0.000001){
-               tmpMat.identity();
-               mesh.setMatrixAt(i, tmpMat);
-               baseBranchMatrices[i] = tmpMat.clone();
-               continue;
-           }
-           dirV.normalize();
-           tmpQuat.setFromUnitVectors(yAxis, dirV);
-           tmpPos.copy(s.a);
-           tmpScale.set(1, len, 1);
-           const radiusScale = Math.max(0.15, s.s);
-           tmpScale.multiply(new THREE.Vector3(radiusScale, 1, radiusScale));
-           tmpMat.compose(tmpPos, tmpQuat, tmpScale);
-           mesh.setMatrixAt(i, tmpMat);
-           baseBranchMatrices[i] = tmpMat.clone();
-       }
-       return mesh;
-   }
-
-   function buildInstancedQuads(items, baseSize, kind){
-       const geom = new THREE.PlaneGeometry(1, 1);
-       const col = kind==='leaf' ? 0x34d399 : (kind==='bud' ? 0xfbbf24 : 0xfb7185);
-       const mat = new THREE.MeshStandardMaterial({color:col, roughness:0.8, metalness:0.0, side:THREE.DoubleSide});
-       const mesh = new THREE.InstancedMesh(geom, mat, items.length);
-       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-
-       const tmpMat = new THREE.Matrix4();
-       const tmpPos = new THREE.Vector3();
-       const tmpScale = new THREE.Vector3();
-       const tmpQuat = new THREE.Quaternion();
-
-       const bases = [];
-       for(let i=0;i<items.length;i++){
-           const it = items[i];
-           tmpPos.copy(it.pos);
-           tmpQuat.copy(it.quat);
-           const s = baseSize * it.scale;
-           if(kind==='leaf') tmpScale.set(s*0.55, s*1.15, 1);
-           else if(kind==='bud') tmpScale.set(s*0.65, s*0.65, 1);
-           else tmpScale.set(s*1.0, s*1.0, 1);
-           tmpMat.compose(tmpPos, tmpQuat, tmpScale);
-           mesh.setMatrixAt(i, tmpMat);
-           bases.push(tmpMat.clone());
-       }
-       return {mesh:mesh, baseMatrices:bases};
-   }
-
-   // Wind
-   const tmpMatA = new THREE.Matrix4();
-   const tmpPosA = new THREE.Vector3();
-   const tmpQuatA = new THREE.Quaternion();
-   const tmpScaleA = new THREE.Vector3();
-   const windAxis = new THREE.Vector3(0,0,1);
-
-   function applyWindToBranches(t, strength, speed){
-       if(!branchMesh) return;
-       if(!(branchMesh instanceof THREE.InstancedMesh)) return;
-       if(!baseBranchMatrices) return;
-
-       for(let i=0;i<baseBranchMatrices.length;i++){
-           tmpMatA.copy(baseBranchMatrices[i]);
-           tmpMatA.decompose(tmpPosA, tmpQuatA, tmpScaleA);
-           const depthFactor = 1 - Math.min(1, (tmpScaleA.x - 0.15) / 1.0);
-           const phase = i * 0.07;
-           const sway = strength * (0.15 + 0.85*depthFactor) * Math.sin(t*speed + phase);
-           const dq = new THREE.Quaternion().setFromAxisAngle(windAxis, sway);
-           tmpQuatA.multiply(dq);
-           tmpMatA.compose(tmpPosA, tmpQuatA, tmpScaleA);
-           branchMesh.setMatrixAt(i, tmpMatA);
-       }
-       branchMesh.instanceMatrix.needsUpdate = true;
-   }
-
-   function applyWindToInstances(t, strength, speed){
-       function apply(mesh, bases, mul){
-           if(!mesh || !bases) return;
-           for(let i=0;i<bases.length;i++){
-               tmpMatA.copy(bases[i]);
-               tmpMatA.decompose(tmpPosA, tmpQuatA, tmpScaleA);
-               const phase = i * 0.11;
-               const sway = strength * mul * Math.sin(t*speed*1.4 + phase);
-               const dq = new THREE.Quaternion().setFromAxisAngle(windAxis, sway);
-               tmpQuatA.multiply(dq);
-               tmpMatA.compose(tmpPosA, tmpQuatA, tmpScaleA);
-               mesh.setMatrixAt(i, tmpMatA);
-           }
-           mesh.instanceMatrix.needsUpdate = true;
-       }
-       apply(leafMesh, baseInstanceMatrices ? baseInstanceMatrices.leaf : null, 1.2);
-       apply(budMesh, baseInstanceMatrices ? baseInstanceMatrices.bud : null, 0.8);
-       apply(flowerMesh, baseInstanceMatrices ? baseInstanceMatrices.flower : null, 1.6);
-   }
-
-   function generate(){
-       try{
-           hudHide();
-           log('Generating…');
-           clearSceneGeometry();
-
-           const axiom = $('axiom').value;
-           const rulesText = $('rules').value;
-           if(!axiom) throw new Error('Axiom is empty.');
-           if(!rulesText) throw new Error('Rules are empty. Select a preset or add rules.');
-
-           const iters = Math.max(0, Math.min(10, parseInt($('iters').value, 10) || 0));
-           const angleDeg = parseFloat($('angle').value) || 25;
-           const step = parseFloat($('step').value) || 1;
-           const thickness = parseFloat($('thickness').value) || 0.02;
-           const maxSeg = parseInt($('maxSeg').value, 10) || 60000;
-           const scaleDecay = Math.min(1, Math.max(0, parseFloat($('scaleDecay').value) || 0.9));
-
-           const params = {
-               windStrength: parseFloat($('windStrength').value) || 0,
-               windSpeed: parseFloat($('windSpeed').value) || 1,
-               leafProb: Math.min(1, Math.max(0, parseFloat($('leafProb').value) || 0)),
-               budProb: Math.min(1, Math.max(0, parseFloat($('budProb').value) || 0)),
-               flowerProb: Math.min(1, Math.max(0, parseFloat($('flowerProb').value) || 0)),
-               instSize: Math.max(0.001, parseFloat($('instSize').value) || 0.06),
-               tipsOnly: $('tipsOnly').value === '1',
-               seed: parseInt($('seed').value, 10) || 1
-           };
-
-           const rules = parseRules(rulesText);
-           if(rules.size === 0) throw new Error('No valid rules parsed. Use lines like F=FF or X=F[+X]F[-X]+X.');
-
-           const expanded = expandLSystem(axiom, rules, iters, 2000000);
-           const interp = turtleInterpret(expanded, {angleDeg:angleDeg, step:step, maxSeg:maxSeg, scaleDecay:scaleDecay});
-
-           const segments = interp.segments;
-           if(segments.length === 0) throw new Error('No segments produced. Make sure rules generate F at some point.');
-
-           const rng = makeRng(params.seed);
-           let instances = interp.instances;
-           if(instances.length === 0 && (params.leafProb + params.budProb + params.flowerProb) > 0){
-               instances = autoPlaceInstances(segments, rng, params);
-           }
-
-           if(thickness <= 0.02){
-               branchMesh = buildLines(segments);
-           } else {
-               branchMesh = buildInstancedCylinders(segments, thickness);
-           }
-           branchGroup.add(branchMesh);
-
-           const leafs = instances.filter(x=>x.type==='leaf');
-           const buds = instances.filter(x=>x.type==='bud');
-           const flowers = instances.filter(x=>x.type==='flower');
-
-           baseInstanceMatrices = {leaf:null, bud:null, flower:null};
-
-           if(leafs.length){
-               const built = buildInstancedQuads(leafs, params.instSize, 'leaf');
-               leafMesh = built.mesh; baseInstanceMatrices.leaf = built.baseMatrices;
-               instGroup.add(leafMesh);
-           }
-           if(buds.length){
-               const built = buildInstancedQuads(buds, params.instSize*0.9, 'bud');
-               budMesh = built.mesh; baseInstanceMatrices.bud = built.baseMatrices;
-               instGroup.add(budMesh);
-           }
-           if(flowers.length){
-               const built = buildInstancedQuads(flowers, params.instSize*1.1, 'flower');
-               flowerMesh = built.mesh; baseInstanceMatrices.flower = built.baseMatrices;
-               instGroup.add(flowerMesh);
-           }
-
-           // Center on origin & floor to y=0
-           // IMPORTANT: do NOT re-parent branchGroup/instGroup into a temp group (it would detach them from root).
-           // Instead, compute bounds directly from root.
-           const box = new THREE.Box3().setFromObject(root);
-           if(!box.isEmpty()){
-               const center = new THREE.Vector3();
-               box.getCenter(center);
-               root.position.sub(center);
-               // Recompute after centering to floor at y=0
-               const box2 = new THREE.Box3().setFromObject(root);
-               root.position.y -= box2.min.y;
-           }
-
-           frameObject(root);
-
-           lastGenerated = {segments:segments, instances:instances, expandedLength:expanded.length, params:params};
-           log('OK: expanded length=' + String(expanded.length) + ' | segments=' + String(segments.length) + ' | instances=' + String(instances.length));
-       } catch(e){
-           console.error(e);
-           const msg = e && e.stack ? e.stack : String(e);
-           hudShow('Generate failed:' + NL + msg);
-           log('Error: ' + (e && e.message ? e.message : String(e)));
-       }
-   }
-
-   function saveTextFile(filename, text){
-       const blob = new Blob([text], {type:'application/json'});
-       const url = URL.createObjectURL(blob);
-       const a = document.createElement('a');
-       a.href = url;
-       a.download = filename;
-       a.click();
-       URL.revokeObjectURL(url);
-   }
-
-   function exportJSON(){
-       if(!lastGenerated){ log('Nothing to export.'); return; }
-       const segs = lastGenerated.segments;
-       const inst = lastGenerated.instances;
-       const out = {
-           version: 1,
-           params: lastGenerated.params,
-           expandedLength: lastGenerated.expandedLength,
-           segments: segs.map(s=>({a:[s.a.x,s.a.y,s.a.z], b:[s.b.x,s.b.y,s.b.z], scale:s.s, depth:s.depth})),
-           instances: inst.map(it=>({type:it.type, pos:[it.pos.x,it.pos.y,it.pos.z], quat:[it.quat.x,it.quat.y,it.quat.z,it.quat.w], scale:it.scale, depth:it.depth, t:it.t}))
-       };
-       saveTextFile('lsystem.json', JSON.stringify(out, null, 2));
-       log('Saved lsystem.json');
-   }
-
-   function exportGLB(){
-       const exporter = new GLTFExporter();
-       exporter.parse(
-           root,
-           (res) => {
-               const blob = new Blob([res], {type:'model/gltf-binary'});
-               const url = URL.createObjectURL(blob);
-               const a = document.createElement('a');
-               a.href = url;
-               a.download = 'lsystem.glb';
-               a.click();
-               URL.revokeObjectURL(url);
-               log('Saved lsystem.glb');
-           },
-           (err) => { console.error(err); hudShow('Export failed:' + NL + String(err)); },
-           {binary:true}
-       );
-   }
-
-   // UI events
-   $('generate').addEventListener('click', generate);
-   $('clear').addEventListener('click', () => { clearSceneGeometry(); log('Cleared.'); hudHide(); });
-   $('resetCam').addEventListener('click', () => {
-       controls.reset();
-       camera.position.set(6,7,10);
-       controls.target.set(0,3,0);
-       controls.update();
-   });
-   $('exportJSON').addEventListener('click', exportJSON);
-   $('exportGLB').addEventListener('click', exportGLB);
-
-   window.addEventListener('keydown', (e) => {
-       if((e.ctrlKey || e.metaKey) && e.key === 'Enter') generate();
-       const k = e.key ? e.key.toLowerCase() : '';
-       if(k === 'l'){
-           lightsEnabled = !lightsEnabled;
-           ambient.visible = lightsEnabled;
-           dirLight.visible = lightsEnabled;
-       }
-       if(k === 'g') grid.visible = !grid.visible;
-       if(k === 'h'){
-           const msg = [
-               'Markers: L leaf, B bud, * flower',
-               'Auto placement: if no markers present',
-               'Export JSON for runtime',
-               'Wind: use sliders'
-           ].join(NL);
-           alert(msg);
-       }
-   });
-
-   // Resize without triggering ResizeObserver loop warnings
-   function resize(){
-       const w = canvas.clientWidth || 0;
-       const h = canvas.clientHeight || 0;
-       if(w === 0 || h === 0){
-           hudShow('Canvas has zero size (width/height=0).');
-           return;
-       }
-       renderer.setSize(w, h, false);
-       camera.aspect = w / h;
-       camera.updateProjectionMatrix();
-   }
-
-   let resizeQueued = false;
-   function queueResize(){
-       if(resizeQueued) return;
-       resizeQueued = true;
-       requestAnimationFrame(() => { resizeQueued = false; resize(); });
-   }
-
-   const viewEl = document.getElementById('view');
-   if(viewEl && window.ResizeObserver){
-       const ro = new ResizeObserver(() => { queueResize(); });
-       ro.observe(viewEl);
-   }
-   window.addEventListener('resize', queueResize);
-   queueResize();
-
-   // Render loop
-   const clock = new THREE.Clock();
-   function tick(){
-       const t = clock.getElapsedTime();
-       const strength = parseFloat($('windStrength').value) || 0;
-       const speed = parseFloat($('windSpeed').value) || 1;
-       applyWindToBranches(t, strength, speed);
-       applyWindToInstances(t, strength, speed);
-       controls.update();
-       renderer.render(scene, camera);
-       requestAnimationFrame(tick);
-   }
-   tick();
-
-   // Start
-   generate();
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+
+    /*
+      Usage notes:
+      - Click a node in the node graph to edit its parameters.
+      - Placement node contains the L-system grammar + wind + auto-placement controls.
+      - Prototype nodes define 2D closed Bezier paths baked into textures (v1: parameter editing).
+      - JSON export is version 2 and includes prototype path strings (flowerPath/leafPath/budPath).
+      - SVG export is an orthographic projection (choose plane in Export node). It uses <defs> + <use>.
+    */
+
+    const NL = String.fromCharCode(10);
+    const CR = String.fromCharCode(13);
+    const BS = String.fromCharCode(92);
+
+    const $ = (id) => document.getElementById(id);
+    const logEl = $('log');
+    const hudEl = $('hud');
+    const nodeGraphSvg = $('nodeGraph');
+    const nodePropsEl = $('nodeProps');
+
+    function log(msg){ logEl.textContent = msg; }
+    function hudShow(msg){ hudEl.style.display='block'; hudEl.textContent = msg; }
+    function hudHide(){ hudEl.style.display='none'; hudEl.textContent = ''; }
+
+    window.addEventListener('error', (e) => {
+      const m = e && e.message ? e.message : '';
+      if(m && m.indexOf('ResizeObserver loop') >= 0) return;
+      const msg = (e && e.error && e.error.stack) ? e.error.stack : (m || String(e));
+      hudShow('Runtime error:' + NL + msg);
+    });
+    window.addEventListener('unhandledrejection', (e) => {
+      const msg = (e && e.reason && e.reason.stack) ? e.reason.stack : String(e.reason);
+      hudShow('Unhandled promise rejection:' + NL + msg);
+    });
+
+    function clamp(v, a, b){ return Math.min(b, Math.max(a, v)); }
+
+    function escapeXmlAttr(s){
+      return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function makeRng(seed){
+      let s = (seed >>> 0) || 1;
+      return { next(){ s = (1664525 * s + 1013904223) >>> 0; return s / 4294967296; } };
+    }
+
+    function buildPresets(){
+      const plantRules = [
+        'X=F[+X]F[-X]+XLB*',
+        'F=FF'
+      ].join(NL);
+
+      const bushRules = [
+        'F=F[+F]F[-F]F'
+      ].join(NL);
+
+      const spiralRules = [
+        'X=F[+X][/X][' + BS + 'X][-X]FX',
+        'F=FF'
+      ].join(NL);
+
+      return [
+        {name:'Plant (markers L/B/*)', axiom:'X', iters:6, angle:25, step:1, thickness:0.04, maxSeg:60000, scaleDecay:0.92, rules:plantRules},
+        {name:'Bush (auto placement)', axiom:'F', iters:5, angle:22, step:1, thickness:0.04, maxSeg:60000, scaleDecay:0.90, rules:bushRules},
+        {name:'Spiral tree (roll)', axiom:'X', iters:6, angle:20, step:1, thickness:0.03, maxSeg:80000, scaleDecay:0.93, rules:spiralRules}
+      ];
+    }
+
+    const PRESETS = buildPresets();
+
+    // ------------------------------------------------------------
+    // Minimal node graph (v1)
+    // ------------------------------------------------------------
+    const GRAPH = {
+      nodeW: 170,
+      nodeH: 56,
+      nodes: new Map(),
+      edges: [
+        {from:'protoFlower', to:'placement'},
+        {from:'protoLeaf', to:'placement'},
+        {from:'protoBud', to:'placement'},
+        {from:'placement', to:'export'}
+      ]
+    };
+
+    function addNode(n){ GRAPH.nodes.set(n.id, n); return n; }
+
+    addNode({
+      id:'protoFlower',
+      type:'prototype',
+      kind:'flower',
+      title:'Prototype (Flower)',
+      x:16, y:20,
+      params:{
+        pathMode:'parametric',
+        petals:7,
+        petalLen:0.95,
+        petalWid:0.55,
+        innerRadius:0.22,
+        roundness:0.55,
+        fill:'#fb7185',
+        stroke:'#0b1220',
+        strokeWidth:0.04,
+        customPathD:''
+      },
+      derived:{pathD:''}
+    });
+    addNode({
+      id:'protoLeaf',
+      type:'prototype',
+      kind:'leaf',
+      title:'Prototype (Leaf)',
+      x:16, y:100,
+      params:{
+        pathMode:'parametric',
+        length:1.0,
+        width:0.52,
+        tipSharpness:0.65,
+        midBend:0.22,
+        fill:'#34d399',
+        stroke:'#0b1220',
+        strokeWidth:0.04,
+        customPathD:''
+      },
+      derived:{pathD:''}
+    });
+    addNode({
+      id:'protoBud',
+      type:'prototype',
+      kind:'bud',
+      title:'Prototype (Bud)',
+      x:16, y:180,
+      params:{
+        pathMode:'parametric',
+        radius:0.48,
+        tip:0.35,
+        fill:'#fbbf24',
+        stroke:'#0b1220',
+        strokeWidth:0.04,
+        customPathD:''
+      },
+      derived:{pathD:''}
+    });
+    addNode({
+      id:'placement',
+      type:'placement',
+      title:'Placement',
+      x:200, y:58,
+      params:{
+        presetIndex:0,
+        axiom:'X',
+        iters:6,
+        angle:25,
+        step:1,
+        thickness:0.04,
+        maxSeg:60000,
+        scaleDecay:0.92,
+        windStrength:0.25,
+        windSpeed:1.2,
+        leafProb:0.35,
+        flowerProb:0.03,
+        budProb:0.10,
+        instSize:0.06,
+        seed:12345,
+        tipsOnly:true,
+        rules:''
+      }
+    });
+    addNode({
+      id:'export',
+      type:'export',
+      title:'Export',
+      x:200, y:160,
+      params:{
+        svgProjection:'xz', // xz top-down, xy front, yz side
+        svgIncludeBranches:true,
+        svgBranchStroke:'#5eead4',
+        svgBranchStrokeWidth:0.03
+      }
+    });
+
+    const STATE = {
+      selectedNodeId:'placement',
+      draggingNodeId:null,
+      dragDX:0,
+      dragDY:0
+    };
+
+    function selectedNode(){ return GRAPH.nodes.get(STATE.selectedNodeId) || null; }
+    function setSelectedNode(id){
+      if(!GRAPH.nodes.has(id)) return;
+      STATE.selectedNodeId = id;
+      renderNodeGraph();
+      renderNodeProps();
+    }
+
+    function svgEl(tag){ return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+    function clearEl(el){ while(el.firstChild) el.removeChild(el.firstChild); }
+
+    function nodeRect(n){ return {x:n.x, y:n.y, w:GRAPH.nodeW, h:GRAPH.nodeH}; }
+    function hitNodeAt(x, y){
+      for(const n of GRAPH.nodes.values()){
+        const r = nodeRect(n);
+        if(x >= r.x && x <= r.x+r.w && y >= r.y && y <= r.y+r.h) return n;
+      }
+      return null;
+    }
+    function edgePath(a, b){
+      const ra = nodeRect(a);
+      const rb = nodeRect(b);
+      const x1 = ra.x + ra.w;
+      const y1 = ra.y + ra.h*0.5;
+      const x2 = rb.x;
+      const y2 = rb.y + rb.h*0.5;
+      const dx = Math.max(40, (x2 - x1) * 0.5);
+      return `M ${x1} ${y1} C ${x1+dx} ${y1} ${x2-dx} ${y2} ${x2} ${y2}`;
+    }
+
+    function renderNodeGraph(){
+      clearEl(nodeGraphSvg);
+
+      for(const e of GRAPH.edges){
+        const a = GRAPH.nodes.get(e.from);
+        const b = GRAPH.nodes.get(e.to);
+        if(!a || !b) continue;
+        const d = edgePath(a, b);
+        const p = svgEl('path');
+        p.setAttribute('class', 'edge');
+        p.setAttribute('d', d);
+        nodeGraphSvg.appendChild(p);
+        const hot = svgEl('path');
+        hot.setAttribute('class', 'edge-hot');
+        hot.setAttribute('d', d);
+        nodeGraphSvg.appendChild(hot);
+      }
+
+      for(const n of GRAPH.nodes.values()){
+        const r = nodeRect(n);
+        const g = svgEl('g');
+        g.setAttribute('data-node', n.id);
+
+        const rect = svgEl('rect');
+        rect.setAttribute('x', String(r.x));
+        rect.setAttribute('y', String(r.y));
+        rect.setAttribute('rx', '10');
+        rect.setAttribute('ry', '10');
+        rect.setAttribute('width', String(r.w));
+        rect.setAttribute('height', String(r.h));
+        rect.setAttribute('class', 'node-rect' + (STATE.selectedNodeId === n.id ? ' sel' : ''));
+        g.appendChild(rect);
+
+        const title = svgEl('text');
+        title.setAttribute('x', String(r.x + 12));
+        title.setAttribute('y', String(r.y + 22));
+        title.setAttribute('class', 'node-title');
+        title.textContent = n.title;
+        g.appendChild(title);
+
+        const sub = svgEl('text');
+        sub.setAttribute('x', String(r.x + 12));
+        sub.setAttribute('y', String(r.y + 40));
+        sub.setAttribute('class', 'node-sub');
+        sub.textContent = n.type === 'prototype' ? '2D curve → texture' : (n.type === 'placement' ? 'Grammar → branches + markers' : 'JSON / SVG / GLB');
+        g.appendChild(sub);
+
+        const hot = svgEl('rect');
+        hot.setAttribute('x', String(r.x));
+        hot.setAttribute('y', String(r.y));
+        hot.setAttribute('width', String(r.w));
+        hot.setAttribute('height', String(r.h));
+        hot.setAttribute('rx', '10');
+        hot.setAttribute('ry', '10');
+        hot.setAttribute('class', 'node-hot');
+        g.appendChild(hot);
+
+        nodeGraphSvg.appendChild(g);
+      }
+    }
+
+    function getSvgPoint(evt){
+      const pt = nodeGraphSvg.createSVGPoint();
+      pt.x = evt.clientX;
+      pt.y = evt.clientY;
+      const ctm = nodeGraphSvg.getScreenCTM();
+      if(!ctm) return {x:0,y:0};
+      const p = pt.matrixTransform(ctm.inverse());
+      return {x:p.x, y:p.y};
+    }
+
+    nodeGraphSvg.addEventListener('pointerdown', (evt) => {
+      const p = getSvgPoint(evt);
+      const n = hitNodeAt(p.x, p.y);
+      if(!n) return;
+      setSelectedNode(n.id);
+      STATE.draggingNodeId = n.id;
+      STATE.dragDX = p.x - n.x;
+      STATE.dragDY = p.y - n.y;
+      nodeGraphSvg.setPointerCapture(evt.pointerId);
+      evt.preventDefault();
+    });
+    nodeGraphSvg.addEventListener('pointermove', (evt) => {
+      if(!STATE.draggingNodeId) return;
+      const n = GRAPH.nodes.get(STATE.draggingNodeId);
+      if(!n) return;
+      const p = getSvgPoint(evt);
+      n.x = clamp(p.x - STATE.dragDX, 8, 380 - GRAPH.nodeW - 8);
+      n.y = clamp(p.y - STATE.dragDY, 8, 260 - GRAPH.nodeH - 8);
+      renderNodeGraph();
+    });
+    nodeGraphSvg.addEventListener('pointerup', (evt) => {
+      if(!STATE.draggingNodeId) return;
+      STATE.draggingNodeId = null;
+      try{ nodeGraphSvg.releasePointerCapture(evt.pointerId); } catch(_e){}
+    });
+    nodeGraphSvg.addEventListener('pointercancel', () => { STATE.draggingNodeId = null; });
+
+    // ------------------------------------------------------------
+    // Prototype curves (Bezier path strings) + texture baking
+    // ------------------------------------------------------------
+    function fmt(n){ return (Math.abs(n) < 1e-8 ? 0 : n); }
+    function svgMoveTo(x,y){ return `M ${fmt(x)} ${fmt(y)}`; }
+    function svgCubicTo(cx1,cy1,cx2,cy2,x,y){ return `C ${fmt(cx1)} ${fmt(cy1)} ${fmt(cx2)} ${fmt(cy2)} ${fmt(x)} ${fmt(y)}`; }
+
+    function makeFlowerPathD(params){
+      const petals = Math.max(3, Math.min(24, Math.round(params.petals || 7)));
+      const petalLen = clamp(params.petalLen ?? 0.95, 0.1, 1.6);
+      const petalWid = clamp(params.petalWid ?? 0.55, 0.05, 1.4);
+      const innerRadius = clamp(params.innerRadius ?? 0.22, 0.02, 0.95);
+      const roundness = clamp(params.roundness ?? 0.55, 0.05, 0.98);
+
+      const r0 = innerRadius;
+      const r1 = Math.max(r0 + 0.02, petalLen);
+
+      let d = '';
+      for(let i=0;i<petals;i++){
+        const a0 = (i / petals) * Math.PI * 2;
+        const a1 = ((i + 0.5) / petals) * Math.PI * 2;
+        const a2 = ((i + 1) / petals) * Math.PI * 2;
+
+        const p0x = Math.cos(a0) * r0;
+        const p0y = Math.sin(a0) * r0;
+        const p2x = Math.cos(a2) * r0;
+        const p2y = Math.sin(a2) * r0;
+        const tipx = Math.cos(a1) * r1;
+        const tipy = Math.sin(a1) * r1;
+
+        const tnx = -Math.sin(a1);
+        const tny = Math.cos(a1);
+        const side = petalWid * (0.35 + 0.65*(1 - r0/r1));
+
+        const c1x = p0x + (Math.cos(a0) * (r1-r0) * 0.55);
+        const c1y = p0y + (Math.sin(a0) * (r1-r0) * 0.55);
+        const c2x = tipx - (Math.cos(a1) * (r1-r0) * roundness) + tnx * side;
+        const c2y = tipy - (Math.sin(a1) * (r1-r0) * roundness) + tny * side;
+
+        const c3x = tipx - (Math.cos(a1) * (r1-r0) * roundness) - tnx * side;
+        const c3y = tipy - (Math.sin(a1) * (r1-r0) * roundness) - tny * side;
+        const c4x = p2x + (Math.cos(a2) * (r1-r0) * 0.55);
+        const c4y = p2y + (Math.sin(a2) * (r1-r0) * 0.55);
+
+        if(i === 0) d += svgMoveTo(p0x, p0y) + ' ';
+        d += svgCubicTo(c1x, c1y, c2x, c2y, tipx, tipy) + ' ';
+        d += svgCubicTo(c3x, c3y, c4x, c4y, p2x, p2y) + ' ';
+      }
+      d += 'Z';
+      return d;
+    }
+
+    function makeLeafPathD(params){
+      const length = clamp(params.length ?? 1.0, 0.1, 2.0);
+      const width = clamp(params.width ?? 0.52, 0.05, 1.5);
+      const tipSharpness = clamp(params.tipSharpness ?? 0.65, 0.05, 0.98);
+      const midBend = clamp(params.midBend ?? 0.22, -0.6, 0.6);
+
+      const y0 = -0.60 * length;
+      const yT =  0.70 * length;
+      const xw =  0.55 * width;
+      const bend = midBend * width;
+
+      const p0 = {x:0, y:y0};
+      const pT = {x:0, y:yT};
+
+      const cL1 = {x:-xw, y:y0 + (yT-y0)*0.20};
+      const cL2 = {x:-xw - bend, y:y0 + (yT-y0)*0.70};
+      const cR2 = {x:xw - bend, y:y0 + (yT-y0)*0.70};
+      const cR1 = {x:xw, y:y0 + (yT-y0)*0.20};
+
+      const cuspL = {x:-xw*tipSharpness, y:yT - (yT-y0)*0.18};
+      const cuspR = {x:xw*tipSharpness, y:yT - (yT-y0)*0.18};
+
+      return [
+        svgMoveTo(p0.x, p0.y),
+        svgCubicTo(cL1.x,cL1.y,cL2.x,cL2.y,cuspL.x,cuspL.y),
+        svgCubicTo(-xw*0.15, yT, -xw*0.05, yT + 0.03*length, pT.x, pT.y),
+        svgCubicTo(xw*0.05, yT + 0.03*length, xw*0.15, yT, cuspR.x, cuspR.y),
+        svgCubicTo(cR2.x,cR2.y,cR1.x,cR1.y,p0.x,p0.y),
+        'Z'
+      ].join(' ');
+    }
+
+    function makeBudPathD(params){
+      const r = clamp(params.radius ?? 0.48, 0.05, 1.2);
+      const tip = clamp(params.tip ?? 0.35, 0.0, 1.4);
+      const p0 = {x:0, y:-r};
+      const pT = {x:0, y:r + tip};
+      const cL1 = {x:-r, y:-r*0.6};
+      const cL2 = {x:-r*0.9, y:r*0.65};
+      const cR2 = {x:r*0.9, y:r*0.65};
+      const cR1 = {x:r, y:-r*0.6};
+      return [
+        svgMoveTo(p0.x, p0.y),
+        svgCubicTo(cL1.x,cL1.y,cL2.x,cL2.y,pT.x,pT.y),
+        svgCubicTo(cR2.x,cR2.y,cR1.x,cR1.y,p0.x,p0.y),
+        'Z'
+      ].join(' ');
+    }
+
+    function updatePrototypeDerived(){
+      for(const n of GRAPH.nodes.values()){
+        if(n.type !== 'prototype') continue;
+        const pm = n.params.pathMode || 'parametric';
+        if(pm === 'custom' && typeof n.params.customPathD === 'string' && n.params.customPathD.trim()){
+          n.derived.pathD = n.params.customPathD.trim();
+        } else {
+          if(n.kind === 'flower') n.derived.pathD = makeFlowerPathD(n.params);
+          else if(n.kind === 'leaf') n.derived.pathD = makeLeafPathD(n.params);
+          else n.derived.pathD = makeBudPathD(n.params);
+        }
+      }
+    }
+
+    function bakePrototypeTexture(proto, size){
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d', {alpha:true});
+      if(!ctx) throw new Error('Failed to create 2D canvas context for texture baking.');
+
+      ctx.clearRect(0,0,size,size);
+      ctx.save();
+      ctx.translate(size*0.5, size*0.5);
+      ctx.scale(size*0.44, -size*0.44); // roughly fit [-1..1] into the square
+
+      let path;
+      try{ path = new Path2D(proto.pathD); }
+      catch(_e){ throw new Error('Invalid SVG path data (d).'); }
+
+      ctx.fillStyle = proto.fill || '#ffffff';
+      ctx.fill(path);
+      const sw = Math.max(0, proto.strokeWidth || 0);
+      if(sw > 0){
+        ctx.lineWidth = sw;
+        ctx.strokeStyle = proto.stroke || '#000000';
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        ctx.stroke(path);
+      }
+
+      ctx.restore();
+      return canvas;
+    }
+
+    // ------------------------------------------------------------
+    // L-system parsing + turtle
+    // ------------------------------------------------------------
+    function parseRules(text){
+      const cleaned = String(text ?? '').split(CR).join('');
+      const lines = cleaned.split(NL);
+      const rules = new Map();
+      for(let i=0;i<lines.length;i++){
+        const line = lines[i].trim();
+        if(!line) continue;
+        const eq = line.indexOf('=');
+        if(eq <= 0) continue;
+        const k = line.slice(0, eq).trim();
+        const v = line.slice(eq+1);
+        rules.set(k, v);
+      }
+      return rules;
+    }
+
+    function expandLSystem(axiom, rules, iterations, maxLen){
+      let s = axiom;
+      const keys = Array.from(rules.keys()).sort((a,b)=>b.length-a.length);
+      for(let it=0; it<iterations; it++){
+        let out = '';
+        for(let pos=0; pos<s.length; ){
+          let matched = false;
+          for(let j=0;j<keys.length;j++){
+            const k = keys[j];
+            if(k.length===1){
+              const ch = s[pos];
+              const r = rules.get(ch);
+              if(r !== undefined){ out += r; matched = true; pos++; break; }
+            } else {
+              if(s.slice(pos, pos+k.length) === k){ out += rules.get(k); matched = true; pos += k.length; break; }
+            }
+          }
+          if(!matched){ out += s[pos]; pos++; }
+          if(out.length > maxLen) throw new Error('Expansion too long. Reduce iterations.');
+        }
+        s = out;
+      }
+      return s;
+    }
+
+    function turtleInterpret(str, opts){
+      const angleRad = THREE.MathUtils.degToRad(opts.angleDeg);
+      const step = opts.step;
+      const maxSeg = opts.maxSeg;
+      const scaleDecay = opts.scaleDecay;
+
+      let pos = new THREE.Vector3(0,0,0);
+      let quat = new THREE.Quaternion();
+      let scale = 1.0;
+      let depth = 0;
+
+      const stack = [];
+      const segments = [];
+      const instances = [];
+
+      const forward = new THREE.Vector3(0,1,0);
+      const yawAxis = new THREE.Vector3(0,0,1);
+      const pitchAxis = new THREE.Vector3(1,0,0);
+      const rollAxis = new THREE.Vector3(0,1,0);
+
+      function rot(axisLocal, rad){
+        const axisWorld = axisLocal.clone().applyQuaternion(quat);
+        const dq = new THREE.Quaternion().setFromAxisAngle(axisWorld, rad);
+        quat.multiply(dq);
+      }
+
+      let drawn = 0;
+      for(let i=0;i<str.length;i++){
+        const c = str[i];
+        if(c === 'F' || c === 'f'){
+          const dirV = forward.clone().applyQuaternion(quat);
+          const newPos = pos.clone().addScaledVector(dirV, step*scale);
+          if(c === 'F'){
+            segments.push({a: pos.clone(), b: newPos.clone(), s: scale, depth: depth});
+            drawn++;
+            if(drawn >= maxSeg) break;
+          }
+          pos = newPos;
+        } else if(c === '+') rot(yawAxis, +angleRad);
+        else if(c === '-') rot(yawAxis, -angleRad);
+        else if(c === '&') rot(pitchAxis, +angleRad);
+        else if(c === '^') rot(pitchAxis, -angleRad);
+        else if(c === BS) rot(rollAxis, +angleRad);
+        else if(c === '/') rot(rollAxis, -angleRad);
+        else if(c === '|') rot(yawAxis, Math.PI);
+        else if(c === '['){ stack.push({pos:pos.clone(), quat:quat.clone(), scale:scale, depth:depth}); scale *= scaleDecay; depth += 1; }
+        else if(c === ']'){
+          const st = stack.pop();
+          if(st){ pos = st.pos; quat = st.quat; scale = st.scale; depth = st.depth; }
+        } else if(c === 'L') instances.push({type:'leaf', pos:pos.clone(), quat:quat.clone(), scale:scale, depth:depth, t:i/str.length});
+        else if(c === 'B') instances.push({type:'bud', pos:pos.clone(), quat:quat.clone(), scale:scale, depth:depth, t:i/str.length});
+        else if(c === '*') instances.push({type:'flower', pos:pos.clone(), quat:quat.clone(), scale:scale, depth:depth, t:i/str.length});
+      }
+      return {segments:segments, instances:instances, segCount:drawn};
+    }
+
+    function computeTipsFromSegments(segments, eps){
+      const inv = 1.0 / eps;
+      const outdeg = new Map();
+      const posByKey = new Map();
+
+      function keyOf(v){
+        const x = Math.round(v.x * inv);
+        const y = Math.round(v.y * inv);
+        const z = Math.round(v.z * inv);
+        return String(x) + '_' + String(y) + '_' + String(z);
+      }
+
+      for(const s of segments){
+        const aK = keyOf(s.a);
+        const bK = keyOf(s.b);
+        posByKey.set(aK, s.a);
+        posByKey.set(bK, s.b);
+        outdeg.set(aK, (outdeg.get(aK) || 0) + 1);
+        if(!outdeg.has(bK)) outdeg.set(bK, 0);
+      }
+
+      const tips = [];
+      for(const [k, deg] of outdeg.entries()){
+        if(deg === 0) tips.push(posByKey.get(k));
+      }
+      return tips;
+    }
+
+    function sampleAlongSegments(segments, everyN){
+      const pts = [];
+      for(let i=0;i<segments.length;i+=everyN){
+        const s = segments[i];
+        pts.push(s.a.clone().lerp(s.b, 0.8));
+      }
+      return pts;
+    }
+
+    function autoPlaceInstances(segments, rng, params){
+      const tips = computeTipsFromSegments(segments, 0.00001);
+      const along = params.tipsOnly ? [] : sampleAlongSegments(segments, 7);
+      const candidates = tips.concat(along);
+
+      const out = [];
+      for(const p of candidates){
+        const yaw = (rng.next()*2-1) * Math.PI;
+        const tilt = (rng.next()*2-1) * 0.6;
+        const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(tilt, yaw, 0, 'XYZ'));
+
+        const r = rng.next();
+        if(r < params.flowerProb) out.push({type:'flower', pos:p.clone(), quat:q, scale:1, depth:3, t:0});
+        else if(r < params.flowerProb + params.budProb) out.push({type:'bud', pos:p.clone(), quat:q, scale:1, depth:3, t:0});
+        else if(r < params.flowerProb + params.budProb + params.leafProb) out.push({type:'leaf', pos:p.clone(), quat:q, scale:1, depth:3, t:0});
+      }
+      return out;
+    }
+
+    // ------------------------------------------------------------
+    // Three.js setup
+    // ------------------------------------------------------------
+    const canvas = $('canvas');
+    let renderer;
+    try { renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true, alpha:false}); }
+    catch(err){ hudShow('Failed to create WebGL renderer.' + NL + String(err)); throw err; }
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0b0f14);
+
+    const camera = new THREE.PerspectiveCamera(55, 1, 0.01, 2000);
+    camera.position.set(6, 7, 10);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+    controls.target.set(0, 3, 0);
+
+    const grid = new THREE.GridHelper(40, 40, 0x223046, 0x223046);
+    scene.add(grid);
+
+    const ambient = new THREE.AmbientLight(0xffffff, 0.55);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    dirLight.position.set(8, 12, 6);
+    scene.add(ambient);
+    scene.add(dirLight);
+    let lightsEnabled = true;
+
+    const root = new THREE.Group();
+    const branchGroup = new THREE.Group();
+    const instGroup = new THREE.Group();
+    root.add(branchGroup);
+    root.add(instGroup);
+    scene.add(root);
+
+    let branchMesh = null;
+    let leafMesh = null;
+    let budMesh = null;
+    let flowerMesh = null;
+
+    let lastGenerated = null;
+    let baseBranchMatrices = null;
+    let baseInstanceMatrices = null;
+
+    const prototypeMaterials = {leaf:null, bud:null, flower:null};
+    const prototypeTextures = {leaf:null, bud:null, flower:null};
+
+    function clearSceneGeometry(){
+      if(branchMesh){
+        branchGroup.remove(branchMesh);
+        if(branchMesh.geometry) branchMesh.geometry.dispose();
+        if(branchMesh.material) branchMesh.material.dispose();
+        branchMesh = null;
+      }
+      const arr = [leafMesh, budMesh, flowerMesh];
+      for(const m of arr){
+        if(!m) continue;
+        instGroup.remove(m);
+        if(m.geometry) m.geometry.dispose();
+        // Do not dispose shared materials (prototypeMaterials).
+      }
+      leafMesh = null; budMesh = null; flowerMesh = null;
+      lastGenerated = null;
+      baseBranchMatrices = null;
+      baseInstanceMatrices = null;
+      root.position.set(0,0,0);
+    }
+
+    function frameObject(obj){
+      const box = new THREE.Box3().setFromObject(obj);
+      if(!isFinite(box.min.x) || box.isEmpty()) return;
+      const size = new THREE.Vector3();
+      const center = new THREE.Vector3();
+      box.getSize(size);
+      box.getCenter(center);
+
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const fov = THREE.MathUtils.degToRad(camera.fov);
+      let dist = maxDim / (2 * Math.tan(fov/2));
+      dist *= 1.35;
+
+      const dirVec = new THREE.Vector3(1, 0.9, 1).normalize();
+      camera.position.copy(center.clone().addScaledVector(dirVec, dist));
+      controls.target.copy(center);
+      camera.near = Math.max(0.01, dist/200);
+      camera.far = dist*20;
+      camera.updateProjectionMatrix();
+      controls.update();
+    }
+
+    function buildLines(segments){
+      const positions = new Float32Array(segments.length * 2 * 3);
+      for(let i=0;i<segments.length;i++){
+        const s = segments[i];
+        const off = i*6;
+        positions[off+0]=s.a.x; positions[off+1]=s.a.y; positions[off+2]=s.a.z;
+        positions[off+3]=s.b.x; positions[off+4]=s.b.y; positions[off+5]=s.b.z;
+      }
+      const geom = new THREE.BufferGeometry();
+      geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geom.computeBoundingSphere();
+      const mat = new THREE.LineBasicMaterial({color:0x5eead4});
+      return new THREE.LineSegments(geom, mat);
+    }
+
+    function buildInstancedCylinders(segments, baseRadius){
+      const cyl = new THREE.CylinderGeometry(baseRadius, baseRadius, 1, 8, 1, true);
+      cyl.translate(0, 0.5, 0);
+      const mat = new THREE.MeshStandardMaterial({color:0x5eead4, roughness:0.55, metalness:0.05});
+      const mesh = new THREE.InstancedMesh(cyl, mat, segments.length);
+      mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+
+      const tmpMat = new THREE.Matrix4();
+      const tmpQuat = new THREE.Quaternion();
+      const tmpPos = new THREE.Vector3();
+      const tmpScale = new THREE.Vector3();
+      const yAxis = new THREE.Vector3(0,1,0);
+
+      baseBranchMatrices = new Array(segments.length);
+
+      for(let i=0;i<segments.length;i++){
+        const s = segments[i];
+        const dirV = s.b.clone().sub(s.a);
+        const len = dirV.length();
+        if(len < 0.000001){
+          tmpMat.identity();
+          mesh.setMatrixAt(i, tmpMat);
+          baseBranchMatrices[i] = tmpMat.clone();
+          continue;
+        }
+        dirV.normalize();
+        tmpQuat.setFromUnitVectors(yAxis, dirV);
+        tmpPos.copy(s.a);
+        tmpScale.set(1, len, 1);
+        const radiusScale = Math.max(0.15, s.s);
+        tmpScale.multiply(new THREE.Vector3(radiusScale, 1, radiusScale));
+        tmpMat.compose(tmpPos, tmpQuat, tmpScale);
+        mesh.setMatrixAt(i, tmpMat);
+        baseBranchMatrices[i] = tmpMat.clone();
+      }
+      return mesh;
+    }
+
+    function materialForKind(kind){
+      let mat = prototypeMaterials[kind];
+      if(mat) return mat;
+      mat = new THREE.MeshStandardMaterial({
+        color:0xffffff,
+        roughness:0.85,
+        metalness:0.0,
+        side:THREE.DoubleSide,
+        transparent:true,
+        alphaTest:0.25
+      });
+      prototypeMaterials[kind] = mat;
+      return mat;
+    }
+
+    function buildInstancedQuads(items, baseSize, kind){
+      const geom = new THREE.PlaneGeometry(1, 1);
+      const mesh = new THREE.InstancedMesh(geom, materialForKind(kind), items.length);
+      mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+
+      const tmpMat = new THREE.Matrix4();
+      const tmpPos = new THREE.Vector3();
+      const tmpScale = new THREE.Vector3();
+      const tmpQuat = new THREE.Quaternion();
+
+      const bases = [];
+      for(let i=0;i<items.length;i++){
+        const it = items[i];
+        tmpPos.copy(it.pos);
+        tmpQuat.copy(it.quat);
+        const s = baseSize * it.scale;
+        if(kind==='leaf') tmpScale.set(s*0.55, s*1.15, 1);
+        else if(kind==='bud') tmpScale.set(s*0.65, s*0.65, 1);
+        else tmpScale.set(s*1.0, s*1.0, 1);
+        tmpMat.compose(tmpPos, tmpQuat, tmpScale);
+        mesh.setMatrixAt(i, tmpMat);
+        bases.push(tmpMat.clone());
+      }
+      return {mesh:mesh, baseMatrices:bases};
+    }
+
+    function rebuildPrototypeTextures(){
+      updatePrototypeDerived();
+      const flowerNode = GRAPH.nodes.get('protoFlower');
+      const leafNode = GRAPH.nodes.get('protoLeaf');
+      const budNode = GRAPH.nodes.get('protoBud');
+      if(!flowerNode || !leafNode || !budNode) throw new Error('Prototype nodes are missing.');
+
+      const protos = {
+        flower:{pathD: flowerNode.derived.pathD, fill: flowerNode.params.fill, stroke: flowerNode.params.stroke, strokeWidth: flowerNode.params.strokeWidth},
+        leaf:{pathD: leafNode.derived.pathD, fill: leafNode.params.fill, stroke: leafNode.params.stroke, strokeWidth: leafNode.params.strokeWidth},
+        bud:{pathD: budNode.derived.pathD, fill: budNode.params.fill, stroke: budNode.params.stroke, strokeWidth: budNode.params.strokeWidth}
+      };
+
+      for(const k of ['flower','leaf','bud']){
+        const baked = bakePrototypeTexture(protos[k], 256);
+        const tex = new THREE.CanvasTexture(baked);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+        tex.needsUpdate = true;
+        tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+        tex.magFilter = THREE.LinearFilter;
+        tex.minFilter = THREE.LinearMipmapLinearFilter;
+
+        if(prototypeTextures[k]) prototypeTextures[k].dispose();
+        prototypeTextures[k] = tex;
+
+        const mat = materialForKind(k);
+        mat.map = tex;
+        mat.needsUpdate = true;
+      }
+    }
+
+    // Wind
+    const tmpMatA = new THREE.Matrix4();
+    const tmpPosA = new THREE.Vector3();
+    const tmpQuatA = new THREE.Quaternion();
+    const tmpScaleA = new THREE.Vector3();
+    const windAxis = new THREE.Vector3(0,0,1);
+
+    function applyWindToBranches(t, strength, speed){
+      if(!branchMesh) return;
+      if(!(branchMesh instanceof THREE.InstancedMesh)) return;
+      if(!baseBranchMatrices) return;
+
+      for(let i=0;i<baseBranchMatrices.length;i++){
+        tmpMatA.copy(baseBranchMatrices[i]);
+        tmpMatA.decompose(tmpPosA, tmpQuatA, tmpScaleA);
+        const depthFactor = 1 - Math.min(1, (tmpScaleA.x - 0.15) / 1.0);
+        const phase = i * 0.07;
+        const sway = strength * (0.15 + 0.85*depthFactor) * Math.sin(t*speed + phase);
+        const dq = new THREE.Quaternion().setFromAxisAngle(windAxis, sway);
+        tmpQuatA.multiply(dq);
+        tmpMatA.compose(tmpPosA, tmpQuatA, tmpScaleA);
+        branchMesh.setMatrixAt(i, tmpMatA);
+      }
+      branchMesh.instanceMatrix.needsUpdate = true;
+    }
+
+    function applyWindToInstances(t, strength, speed){
+      function apply(mesh, bases, mul){
+        if(!mesh || !bases) return;
+        for(let i=0;i<bases.length;i++){
+          tmpMatA.copy(bases[i]);
+          tmpMatA.decompose(tmpPosA, tmpQuatA, tmpScaleA);
+          const phase = i * 0.11;
+          const sway = strength * mul * Math.sin(t*speed*1.4 + phase);
+          const dq = new THREE.Quaternion().setFromAxisAngle(windAxis, sway);
+          tmpQuatA.multiply(dq);
+          tmpMatA.compose(tmpPosA, tmpQuatA, tmpScaleA);
+          mesh.setMatrixAt(i, tmpMatA);
+        }
+        mesh.instanceMatrix.needsUpdate = true;
+      }
+      apply(leafMesh, baseInstanceMatrices ? baseInstanceMatrices.leaf : null, 1.2);
+      apply(budMesh, baseInstanceMatrices ? baseInstanceMatrices.bud : null, 0.8);
+      apply(flowerMesh, baseInstanceMatrices ? baseInstanceMatrices.flower : null, 1.6);
+    }
+
+    function getPlacementParams(){
+      const n = GRAPH.nodes.get('placement');
+      if(!n) throw new Error('Placement node is missing.');
+      const p = n.params;
+      return {
+        axiom: String(p.axiom || ''),
+        rulesText: String(p.rules || ''),
+        iters: Math.max(0, Math.min(10, parseInt(p.iters, 10) || 0)),
+        angleDeg: parseFloat(p.angle) || 25,
+        step: parseFloat(p.step) || 1,
+        thickness: parseFloat(p.thickness) || 0.02,
+        maxSeg: parseInt(p.maxSeg, 10) || 60000,
+        scaleDecay: clamp(parseFloat(p.scaleDecay) || 0.9, 0, 1),
+        windStrength: clamp(parseFloat(p.windStrength) || 0, 0, 1),
+        windSpeed: clamp(parseFloat(p.windSpeed) || 1, 0, 5),
+        leafProb: clamp(parseFloat(p.leafProb) || 0, 0, 1),
+        budProb: clamp(parseFloat(p.budProb) || 0, 0, 1),
+        flowerProb: clamp(parseFloat(p.flowerProb) || 0, 0, 1),
+        instSize: Math.max(0.001, parseFloat(p.instSize) || 0.06),
+        seed: parseInt(p.seed, 10) || 1,
+        tipsOnly: !!p.tipsOnly
+      };
+    }
+
+    function generate(){
+      try{
+        hudHide();
+        log('Generating…');
+        clearSceneGeometry();
+
+        rebuildPrototypeTextures();
+
+        const place = getPlacementParams();
+        const axiom = place.axiom;
+        const rulesText = place.rulesText;
+        if(!axiom) throw new Error('Axiom is empty.');
+        if(!rulesText) throw new Error('Rules are empty. Select a preset or add rules.');
+
+        const rules = parseRules(rulesText);
+        if(rules.size === 0) throw new Error('No valid rules parsed. Use lines like F=FF or X=F[+X]F[-X]+X.');
+
+        const expanded = expandLSystem(axiom, rules, place.iters, 2000000);
+        const interp = turtleInterpret(expanded, {angleDeg:place.angleDeg, step:place.step, maxSeg:place.maxSeg, scaleDecay:place.scaleDecay});
+
+        const segments = interp.segments;
+        if(segments.length === 0) throw new Error('No segments produced. Make sure rules generate F at some point.');
+
+        const rng = makeRng(place.seed);
+        let instances = interp.instances;
+        if(instances.length === 0 && (place.leafProb + place.budProb + place.flowerProb) > 0){
+          instances = autoPlaceInstances(segments, rng, place);
+        }
+
+        if(place.thickness <= 0.02) branchMesh = buildLines(segments);
+        else branchMesh = buildInstancedCylinders(segments, place.thickness);
+        branchGroup.add(branchMesh);
+
+        const leafs = instances.filter(x=>x.type==='leaf');
+        const buds = instances.filter(x=>x.type==='bud');
+        const flowers = instances.filter(x=>x.type==='flower');
+
+        baseInstanceMatrices = {leaf:null, bud:null, flower:null};
+
+        if(leafs.length){
+          const built = buildInstancedQuads(leafs, place.instSize, 'leaf');
+          leafMesh = built.mesh; baseInstanceMatrices.leaf = built.baseMatrices;
+          instGroup.add(leafMesh);
+        }
+        if(buds.length){
+          const built = buildInstancedQuads(buds, place.instSize*0.9, 'bud');
+          budMesh = built.mesh; baseInstanceMatrices.bud = built.baseMatrices;
+          instGroup.add(budMesh);
+        }
+        if(flowers.length){
+          const built = buildInstancedQuads(flowers, place.instSize*1.1, 'flower');
+          flowerMesh = built.mesh; baseInstanceMatrices.flower = built.baseMatrices;
+          instGroup.add(flowerMesh);
+        }
+
+        // Center on origin & floor to y=0
+        const box = new THREE.Box3().setFromObject(root);
+        if(!box.isEmpty()){
+          const center = new THREE.Vector3();
+          box.getCenter(center);
+          root.position.sub(center);
+          const box2 = new THREE.Box3().setFromObject(root);
+          root.position.y -= box2.min.y;
+        }
+
+        frameObject(root);
+        lastGenerated = {segments:segments, instances:instances, expandedLength:expanded.length, params:place};
+        log('OK: expanded length=' + String(expanded.length) + ' | segments=' + String(segments.length) + ' | instances=' + String(instances.length));
+      } catch(e){
+        console.error(e);
+        const msg = e && e.stack ? e.stack : String(e);
+        hudShow('Generate failed:' + NL + msg);
+        log('Error: ' + (e && e.message ? e.message : String(e)));
+      }
+    }
+
+    function saveTextFile(filename, text, mime){
+      const blob = new Blob([text], {type: mime || 'text/plain'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportJSON(){
+      try{
+        if(!lastGenerated){ log('Nothing to export.'); return; }
+        updatePrototypeDerived();
+        const flowerNode = GRAPH.nodes.get('protoFlower');
+        const leafNode = GRAPH.nodes.get('protoLeaf');
+        const budNode = GRAPH.nodes.get('protoBud');
+        if(!flowerNode || !leafNode || !budNode) throw new Error('Prototype nodes are missing.');
+
+        const segs = lastGenerated.segments;
+        const inst = lastGenerated.instances;
+        const out = {
+          version: 2,
+          params: lastGenerated.params,
+          proto: {
+            flowerPath: flowerNode.derived.pathD,
+            leafPath: leafNode.derived.pathD,
+            budPath: budNode.derived.pathD,
+            flower: {pathD: flowerNode.derived.pathD, params: flowerNode.params},
+            leaf: {pathD: leafNode.derived.pathD, params: leafNode.params},
+            bud: {pathD: budNode.derived.pathD, params: budNode.params}
+          },
+          expandedLength: lastGenerated.expandedLength,
+          segments: segs.map(s=>({a:[s.a.x,s.a.y,s.a.z], b:[s.b.x,s.b.y,s.b.z], scale:s.s, depth:s.depth})),
+          instances: inst.map(it=>({type:it.type, pos:[it.pos.x,it.pos.y,it.pos.z], quat:[it.quat.x,it.quat.y,it.quat.z,it.quat.w], scale:it.scale, depth:it.depth, t:it.t}))
+        };
+        saveTextFile('lsystem.json', JSON.stringify(out, null, 2), 'application/json');
+        log('Saved lsystem.json');
+      } catch(e){
+        console.error(e);
+        hudShow('JSON export failed:' + NL + (e && e.stack ? e.stack : String(e)));
+        log('Error: ' + (e && e.message ? e.message : String(e)));
+      }
+    }
+
+    function exportSVG(){
+      if(!lastGenerated){ log('Nothing to export.'); return; }
+      updatePrototypeDerived();
+
+      const expNode = GRAPH.nodes.get('export');
+      const proj = (expNode && expNode.params && expNode.params.svgProjection) ? expNode.params.svgProjection : 'xz';
+      const includeBranches = !!(expNode && expNode.params && expNode.params.svgIncludeBranches);
+
+      const flowerNode = GRAPH.nodes.get('protoFlower');
+      const leafNode = GRAPH.nodes.get('protoLeaf');
+      const budNode = GRAPH.nodes.get('protoBud');
+      if(!flowerNode || !leafNode || !budNode) throw new Error('Prototype nodes are missing.');
+
+      function proj2(v){
+        if(proj === 'xy') return {x:v.x, y:-v.y};
+        if(proj === 'yz') return {x:v.z, y:-v.y};
+        return {x:v.x, y:-v.z}; // xz
+      }
+
+      let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
+      function expandB(p){
+        minX = Math.min(minX, p.x); minY = Math.min(minY, p.y);
+        maxX = Math.max(maxX, p.x); maxY = Math.max(maxY, p.y);
+      }
+      for(const s of lastGenerated.segments){
+        expandB(proj2(s.a));
+        expandB(proj2(s.b));
+      }
+      for(const it of lastGenerated.instances) expandB(proj2(it.pos));
+      if(!isFinite(minX) || !isFinite(minY)) throw new Error('Failed to compute SVG bounds.');
+
+      const pad = 0.6;
+      minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+      const vbW = Math.max(1e-6, maxX - minX);
+      const vbH = Math.max(1e-6, maxY - minY);
+
+      const branchStroke = (expNode && expNode.params && expNode.params.svgBranchStroke) ? expNode.params.svgBranchStroke : '#5eead4';
+      const branchSW = (expNode && expNode.params && expNode.params.svgBranchStrokeWidth) ? Number(expNode.params.svgBranchStrokeWidth) : 0.03;
+
+      const defs = [
+        `<path id="p-flower" d="${escapeXmlAttr(flowerNode.derived.pathD)}" fill="${escapeXmlAttr(flowerNode.params.fill)}" stroke="${escapeXmlAttr(flowerNode.params.stroke)}" stroke-width="${escapeXmlAttr(flowerNode.params.strokeWidth)}" />`,
+        `<path id="p-leaf" d="${escapeXmlAttr(leafNode.derived.pathD)}" fill="${escapeXmlAttr(leafNode.params.fill)}" stroke="${escapeXmlAttr(leafNode.params.stroke)}" stroke-width="${escapeXmlAttr(leafNode.params.strokeWidth)}" />`,
+        `<path id="p-bud" d="${escapeXmlAttr(budNode.derived.pathD)}" fill="${escapeXmlAttr(budNode.params.fill)}" stroke="${escapeXmlAttr(budNode.params.stroke)}" stroke-width="${escapeXmlAttr(budNode.params.strokeWidth)}" />`
+      ].join(NL);
+
+      let branchPath = '';
+      if(includeBranches){
+        const parts = [];
+        for(const s of lastGenerated.segments){
+          const a = proj2(s.a), b = proj2(s.b);
+          parts.push(`M ${fmt(a.x)} ${fmt(a.y)} L ${fmt(b.x)} ${fmt(b.y)}`);
+        }
+        branchPath = `<path d="${parts.join(' ')}" fill="none" stroke="${escapeXmlAttr(branchStroke)}" stroke-width="${escapeXmlAttr(branchSW)}" stroke-linecap="round" stroke-linejoin="round" />`;
+      }
+
+      const euler = new THREE.Euler();
+      function yawDegFromQuat(q){
+        euler.setFromQuaternion(q, 'YXZ');
+        return euler.y * 180 / Math.PI;
+      }
+
+      const place = getPlacementParams();
+      const uses = [];
+      for(const it of lastGenerated.instances){
+        const p = proj2(it.pos);
+        const mul = it.type === 'flower' ? 1.1 : (it.type === 'bud' ? 0.9 : 1.0);
+        const size = place.instSize * mul * (it.scale || 1);
+        const yaw = yawDegFromQuat(it.quat);
+        const href = it.type === 'flower' ? '#p-flower' : (it.type === 'bud' ? '#p-bud' : '#p-leaf');
+        uses.push(`<use href="${href}" transform="translate(${fmt(p.x)} ${fmt(p.y)}) rotate(${fmt(yaw)}) scale(${fmt(size)})" />`);
+      }
+
+      const svg = [
+        `<?xml version="1.0" encoding="UTF-8"?>`,
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${fmt(minX)} ${fmt(minY)} ${fmt(vbW)} ${fmt(vbH)}" width="${fmt(vbW)}" height="${fmt(vbH)}">`,
+        `<defs>`,
+        defs,
+        `</defs>`,
+        `<g id="branches">`,
+        branchPath,
+        `</g>`,
+        `<g id="instances">`,
+        uses.join(NL),
+        `</g>`,
+        `</svg>`
+      ].join(NL);
+
+      saveTextFile('lsystem.svg', svg, 'image/svg+xml');
+      log('Saved lsystem.svg');
+    }
+
+    function exportGLB(){
+      const exporter = new GLTFExporter();
+      exporter.parse(
+        root,
+        (res) => {
+          const blob = new Blob([res], {type:'model/gltf-binary'});
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'lsystem.glb';
+          a.click();
+          URL.revokeObjectURL(url);
+          log('Saved lsystem.glb');
+        },
+        (err) => { console.error(err); hudShow('Export failed:' + NL + String(err)); },
+        {binary:true}
+      );
+    }
+
+    // ------------------------------------------------------------
+    // Node property panel UI
+    // ------------------------------------------------------------
+    function el(tag, props){
+      const e = document.createElement(tag);
+      if(props){
+        for(const k in props){
+          if(k === 'text') e.textContent = props[k];
+          else if(k === 'html') e.innerHTML = props[k];
+          else if(k === 'class') e.className = props[k];
+          else e.setAttribute(k, props[k]);
+        }
+      }
+      return e;
+    }
+    function makeLabeledInput(labelText, inputEl){
+      const wrap = el('div');
+      const lab = el('label', {text:labelText});
+      wrap.appendChild(lab);
+      wrap.appendChild(inputEl);
+      return wrap;
+    }
+
+    function makeNumber(value, min, max, step){
+      const i = el('input');
+      i.type = 'number';
+      if(min !== undefined) i.min = String(min);
+      if(max !== undefined) i.max = String(max);
+      if(step !== undefined) i.step = String(step);
+      i.value = String(value);
+      return i;
+    }
+    function makeText(value){
+      const i = el('input');
+      i.type = 'text';
+      i.value = String(value ?? '');
+      return i;
+    }
+    function makeRange(value, min, max, step){
+      const i = el('input');
+      i.type = 'range';
+      i.min = String(min);
+      i.max = String(max);
+      i.step = String(step);
+      i.value = String(value);
+      return i;
+    }
+    function makeColor(value){
+      const i = el('input');
+      i.type = 'color';
+      i.value = String(value || '#ffffff');
+      return i;
+    }
+    function makeTextarea(value){
+      const t = el('textarea');
+      t.value = String(value ?? '');
+      return t;
+    }
+    function makeSelect(options, value){
+      const s = el('select');
+      for(const opt of options){
+        const o = el('option');
+        o.value = String(opt.value);
+        o.textContent = opt.label;
+        if(String(opt.value) === String(value)) o.selected = true;
+        s.appendChild(o);
+      }
+      return s;
+    }
+
+    function renderPrototypeEditor(n){
+      const p = n.params;
+      const box = el('div');
+
+      const mode = makeSelect(
+        [{value:'parametric', label:'Path mode: parametric'}, {value:'custom', label:'Path mode: custom d'}],
+        p.pathMode || 'parametric'
+      );
+      mode.addEventListener('change', () => {
+        p.pathMode = mode.value;
+        renderNodeProps();
+        try{ rebuildPrototypeTextures(); }
+        catch(e){ log('Error: ' + (e && e.message ? e.message : String(e))); }
+      });
+      box.appendChild(makeLabeledInput('Path', mode));
+
+      if((p.pathMode || 'parametric') === 'custom'){
+        const td = makeTextarea(p.customPathD || '');
+        td.style.minHeight = '70px';
+        td.addEventListener('input', () => {
+          p.customPathD = td.value;
+          try{ rebuildPrototypeTextures(); log('Updated prototype path.'); }
+          catch(e){ log('Error: ' + (e && e.message ? e.message : String(e))); }
+          renderNodePropsPreviewOnly();
+        });
+        box.appendChild(makeLabeledInput('SVG path d (closed)', td));
+      }
+
+      function addParam(labelText, key, min, max, step){
+        const i = makeNumber(p[key], min, max, step);
+        i.addEventListener('input', () => {
+          p[key] = parseFloat(i.value);
+          try{ rebuildPrototypeTextures(); } catch(_e){}
+          renderNodePropsPreviewOnly();
+        });
+        box.appendChild(makeLabeledInput(labelText, i));
+      }
+
+      if((p.pathMode || 'parametric') === 'parametric'){
+        if(n.kind === 'flower'){
+          addParam('Petals', 'petals', 3, 24, 1);
+          addParam('Petal length', 'petalLen', 0.1, 1.6, 0.01);
+          addParam('Petal width', 'petalWid', 0.05, 1.4, 0.01);
+          addParam('Inner radius', 'innerRadius', 0.02, 0.95, 0.01);
+          addParam('Roundness', 'roundness', 0.05, 0.98, 0.01);
+        } else if(n.kind === 'leaf'){
+          addParam('Length', 'length', 0.1, 2.0, 0.01);
+          addParam('Width', 'width', 0.05, 1.5, 0.01);
+          addParam('Tip sharpness', 'tipSharpness', 0.05, 0.98, 0.01);
+          addParam('Mid bend', 'midBend', -0.6, 0.6, 0.01);
+        } else {
+          addParam('Radius', 'radius', 0.05, 1.2, 0.01);
+          addParam('Tip', 'tip', 0.0, 1.4, 0.01);
+        }
+      }
+
+      const fill = makeColor(p.fill);
+      fill.addEventListener('input', () => { p.fill = fill.value; try{ rebuildPrototypeTextures(); } catch(_e){}; renderNodePropsPreviewOnly(); });
+      box.appendChild(makeLabeledInput('Fill', fill));
+
+      const stroke = makeColor(p.stroke);
+      stroke.addEventListener('input', () => { p.stroke = stroke.value; try{ rebuildPrototypeTextures(); } catch(_e){}; renderNodePropsPreviewOnly(); });
+      box.appendChild(makeLabeledInput('Stroke', stroke));
+
+      const sw = makeNumber(p.strokeWidth, 0, 0.4, 0.005);
+      sw.addEventListener('input', () => { p.strokeWidth = parseFloat(sw.value); try{ rebuildPrototypeTextures(); } catch(_e){}; renderNodePropsPreviewOnly(); });
+      box.appendChild(makeLabeledInput('Stroke width (proto space)', sw));
+
+      const preview = el('svg');
+      preview.setAttribute('class', 'svglite');
+      preview.setAttribute('viewBox', '-1.6 -1.6 3.2 3.2');
+      preview.innerHTML = `<rect x="-3" y="-3" width="6" height="6" fill="#0b1220"></rect>`;
+      box.appendChild(makeLabeledInput('Preview', preview));
+
+      const hint = el('p', {class:'hint', text:'v1: curve editing is parameter-based. The internal model stores the derived SVG path string so we can later add draggable control points.'});
+      box.appendChild(hint);
+      return box;
+    }
+
+    function renderPlacementEditor(n){
+      const p = n.params;
+      const box = el('div');
+
+      const preset = makeSelect(PRESETS.map((pr, idx)=>({value:idx, label:'Preset: ' + pr.name})), p.presetIndex || 0);
+      preset.addEventListener('change', () => {
+        const idx = parseInt(preset.value, 10) || 0;
+        p.presetIndex = idx;
+        const pr = PRESETS[idx];
+        p.axiom = pr.axiom;
+        p.iters = pr.iters;
+        p.angle = pr.angle;
+        p.step = pr.step;
+        p.thickness = pr.thickness;
+        p.maxSeg = pr.maxSeg;
+        p.scaleDecay = pr.scaleDecay;
+        p.rules = pr.rules;
+        renderNodeProps();
+        generate();
+      });
+      box.appendChild(makeLabeledInput('Preset', preset));
+
+      const ax = makeText(p.axiom);
+      ax.addEventListener('input', () => { p.axiom = ax.value; });
+      box.appendChild(makeLabeledInput('Axiom', ax));
+
+      const it = makeNumber(p.iters, 0, 10, 1);
+      it.addEventListener('input', () => { p.iters = parseInt(it.value, 10) || 0; });
+      box.appendChild(makeLabeledInput('Iterations', it));
+
+      const rules = makeTextarea(p.rules);
+      rules.addEventListener('input', () => { p.rules = rules.value; });
+      box.appendChild(makeLabeledInput('Rules (one per line)', rules));
+
+      const angle = makeNumber(p.angle, 0, 180, 1);
+      angle.addEventListener('input', () => { p.angle = parseFloat(angle.value); });
+      const step = makeNumber(p.step, 0.01, 10, 0.01);
+      step.addEventListener('input', () => { p.step = parseFloat(step.value); });
+      const thick = makeNumber(p.thickness, 0.001, 2, 0.001);
+      thick.addEventListener('input', () => { p.thickness = parseFloat(thick.value); });
+      const rowA = el('div', {class:'grid3'});
+      rowA.appendChild(makeLabeledInput('Angle θ (deg)', angle));
+      rowA.appendChild(makeLabeledInput('Step length', step));
+      rowA.appendChild(makeLabeledInput('Thickness', thick));
+      box.appendChild(rowA);
+
+      const maxSeg = makeNumber(p.maxSeg, 100, 200000, 100);
+      maxSeg.addEventListener('input', () => { p.maxSeg = parseInt(maxSeg.value, 10) || 60000; });
+      const decay = makeNumber(p.scaleDecay, 0, 1, 0.01);
+      decay.addEventListener('input', () => { p.scaleDecay = parseFloat(decay.value); });
+      const rowB = el('div', {class:'grid2'});
+      rowB.appendChild(makeLabeledInput('Max segments (safety)', maxSeg));
+      rowB.appendChild(makeLabeledInput('Branch scale decay (0-1)', decay));
+      box.appendChild(rowB);
+
+      const wind = makeRange(p.windStrength, 0, 1, 0.01);
+      wind.addEventListener('input', () => { p.windStrength = parseFloat(wind.value); });
+      const windSpeed = makeNumber(p.windSpeed, 0, 5, 0.05);
+      windSpeed.addEventListener('input', () => { p.windSpeed = parseFloat(windSpeed.value); });
+      const wRow = el('div', {class:'row'});
+      wRow.style.justifyContent = 'space-between';
+      wRow.style.alignItems = 'flex-end';
+      const wWrap = el('div'); wWrap.style.flex = '1';
+      const sWrap = el('div'); sWrap.style.width = '90px';
+      wWrap.appendChild(makeLabeledInput('Wind strength', wind));
+      sWrap.appendChild(makeLabeledInput('Speed', windSpeed));
+      wRow.appendChild(wWrap);
+      wRow.appendChild(sWrap);
+      box.appendChild(wRow);
+
+      const leafProb = makeNumber(p.leafProb, 0, 1, 0.01);
+      leafProb.addEventListener('input', () => { p.leafProb = parseFloat(leafProb.value); });
+      const flowerProb = makeNumber(p.flowerProb, 0, 1, 0.01);
+      flowerProb.addEventListener('input', () => { p.flowerProb = parseFloat(flowerProb.value); });
+      const rowC = el('div', {class:'grid2'});
+      rowC.appendChild(makeLabeledInput('Leaf prob (auto)', leafProb));
+      rowC.appendChild(makeLabeledInput('Flower prob (auto)', flowerProb));
+      box.appendChild(rowC);
+
+      const budProb = makeNumber(p.budProb, 0, 1, 0.01);
+      budProb.addEventListener('input', () => { p.budProb = parseFloat(budProb.value); });
+      const instSize = makeNumber(p.instSize, 0.005, 1, 0.005);
+      instSize.addEventListener('input', () => { p.instSize = parseFloat(instSize.value); });
+      const rowD = el('div', {class:'grid2'});
+      rowD.appendChild(makeLabeledInput('Bud prob (auto)', budProb));
+      rowD.appendChild(makeLabeledInput('Instance size', instSize));
+      box.appendChild(rowD);
+
+      const seed = makeNumber(p.seed, 0, 999999, 1);
+      seed.addEventListener('input', () => { p.seed = parseInt(seed.value, 10) || 1; });
+      const tipsOnly = makeSelect([{value:'1', label:'Yes'}, {value:'0', label:'No (also along branches)'}], p.tipsOnly ? '1' : '0');
+      tipsOnly.addEventListener('change', () => { p.tipsOnly = tipsOnly.value === '1'; });
+      const rowE = el('div', {class:'grid2'});
+      rowE.appendChild(makeLabeledInput('Seed', seed));
+      rowE.appendChild(makeLabeledInput('Place at tips only', tipsOnly));
+      box.appendChild(rowE);
+
+      const hint = el('p', {class:'hint', text:'Markers in the grammar: L=leaf, B=bud, *=flower. If you don’t use markers, auto placement uses the probabilities above.'});
+      box.appendChild(hint);
+
+      const genBtn = el('button', {class:'primary', text:'Generate'});
+      genBtn.addEventListener('click', generate);
+      box.appendChild(genBtn);
+      return box;
+    }
+
+    function renderExportEditor(n){
+      const p = n.params;
+      const box = el('div');
+
+      const proj = makeSelect(
+        [{value:'xz', label:'SVG projection: top-down (X/Z)'}, {value:'xy', label:'SVG projection: front (X/Y)'}, {value:'yz', label:'SVG projection: side (Z/Y)'}],
+        p.svgProjection || 'xz'
+      );
+      proj.addEventListener('change', () => { p.svgProjection = proj.value; });
+      box.appendChild(makeLabeledInput('SVG', proj));
+
+      const inc = makeSelect([{value:'1', label:'Include branches: yes'}, {value:'0', label:'Include branches: no'}], p.svgIncludeBranches ? '1' : '0');
+      inc.addEventListener('change', () => { p.svgIncludeBranches = inc.value === '1'; });
+      box.appendChild(makeLabeledInput('Branches', inc));
+
+      const bs = makeColor(p.svgBranchStroke || '#5eead4');
+      bs.addEventListener('input', () => { p.svgBranchStroke = bs.value; });
+      box.appendChild(makeLabeledInput('Branch stroke', bs));
+
+      const bsw = makeNumber(p.svgBranchStrokeWidth || 0.03, 0.001, 1, 0.001);
+      bsw.addEventListener('input', () => { p.svgBranchStrokeWidth = parseFloat(bsw.value); });
+      box.appendChild(makeLabeledInput('Branch stroke width', bsw));
+
+      const row = el('div', {class:'row'});
+      const bJson = el('button', {text:'Export JSON'});
+      bJson.addEventListener('click', exportJSON);
+      const bSvg = el('button', {text:'Export SVG'});
+      bSvg.addEventListener('click', () => {
+        try{ exportSVG(); }
+        catch(e){ console.error(e); hudShow('SVG export failed:' + NL + (e && e.stack ? e.stack : String(e))); }
+      });
+      const bGlb = el('button', {text:'Export GLB'});
+      bGlb.addEventListener('click', exportGLB);
+      row.appendChild(bJson);
+      row.appendChild(bSvg);
+      row.appendChild(bGlb);
+      box.appendChild(row);
+
+      const hint = el('p', {class:'hint', text:'SVG export is an orthographic projection of the 3D result (choose the plane above). Prototypes are embedded in <defs> as bezier paths and placed using <use>.'});
+      box.appendChild(hint);
+      return box;
+    }
+
+    function renderNodeProps(){
+      clearEl(nodePropsEl);
+      const n = selectedNode();
+      if(!n){
+        nodePropsEl.appendChild(el('div', {class:'small', text:'No node selected.'}));
+        return;
+      }
+      let editor;
+      if(n.type === 'prototype') editor = renderPrototypeEditor(n);
+      else if(n.type === 'placement') editor = renderPlacementEditor(n);
+      else editor = renderExportEditor(n);
+      nodePropsEl.appendChild(editor);
+      renderNodePropsPreviewOnly();
+    }
+
+    function renderNodePropsPreviewOnly(){
+      const n = selectedNode();
+      if(!n || n.type !== 'prototype') return;
+      const previewEl = nodePropsEl.querySelector('.svglite');
+      if(!previewEl) return;
+      updatePrototypeDerived();
+      const d = n.derived.pathD;
+      const fill = n.params.fill;
+      const stroke = n.params.stroke;
+      const sw = n.params.strokeWidth;
+      previewEl.innerHTML = [
+        `<rect x="-3" y="-3" width="6" height="6" fill="#0b1220"></rect>`,
+        `<path d="${escapeXmlAttr(d)}" fill="${escapeXmlAttr(fill)}" stroke="${escapeXmlAttr(stroke)}" stroke-width="${escapeXmlAttr(sw)}" />`,
+        `<path d="${escapeXmlAttr(d)}" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="0.01" />`
+      ].join('');
+    }
+
+    function initNodeUI(){
+      const p = GRAPH.nodes.get('placement');
+      if(p){
+        const pr = PRESETS[p.params.presetIndex || 0] || PRESETS[0];
+        p.params.rules = pr.rules;
+        p.params.axiom = pr.axiom;
+        p.params.iters = pr.iters;
+        p.params.angle = pr.angle;
+        p.params.step = pr.step;
+        p.params.thickness = pr.thickness;
+        p.params.maxSeg = pr.maxSeg;
+        p.params.scaleDecay = pr.scaleDecay;
+      }
+      updatePrototypeDerived();
+      renderNodeGraph();
+      renderNodeProps();
+    }
+
+    // ------------------------------------------------------------
+    // UI events
+    // ------------------------------------------------------------
+    $('generate').addEventListener('click', generate);
+    $('clear').addEventListener('click', () => { clearSceneGeometry(); log('Cleared.'); hudHide(); });
+    $('resetCam').addEventListener('click', () => {
+      controls.reset();
+      camera.position.set(6,7,10);
+      controls.target.set(0,3,0);
+      controls.update();
+    });
+    $('exportJSON').addEventListener('click', exportJSON);
+    $('exportSVG').addEventListener('click', () => {
+      try{ exportSVG(); }
+      catch(e){
+        console.error(e);
+        hudShow('SVG export failed:' + NL + (e && e.stack ? e.stack : String(e)));
+        log('Error: ' + (e && e.message ? e.message : String(e)));
+      }
+    });
+    $('exportGLB').addEventListener('click', exportGLB);
+
+    window.addEventListener('keydown', (e) => {
+      if((e.ctrlKey || e.metaKey) && e.key === 'Enter') generate();
+      const k = e.key ? e.key.toLowerCase() : '';
+      if(k === 'l'){
+        lightsEnabled = !lightsEnabled;
+        ambient.visible = lightsEnabled;
+        dirLight.visible = lightsEnabled;
+      }
+      if(k === 'g') grid.visible = !grid.visible;
+      if(k === 'h'){
+        const msg = [
+          'Node graph:',
+          '  - Click a node to edit its parameters',
+          '  - Drag nodes to rearrange (visual only in v1)',
+          '',
+          'Placement:',
+          '  - Grammar markers: L leaf, B bud, * flower',
+          '  - Auto placement triggers if there are no markers',
+          '',
+          'Prototypes:',
+          '  - Flower/Leaf/Bud are 2D closed Bezier paths baked into textures',
+          '  - v1: parameter editing (path data is derived)',
+          '',
+          'Export:',
+          '  - JSON version is 2 (includes flowerPath/leafPath/budPath)',
+          '  - SVG uses <defs> + <use> and embeds paths in defs',
+          '',
+          'Shortcuts:',
+          '  - Ctrl/Command + Enter: Generate',
+          '  - L: toggle lights, G: toggle grid'
+        ].join(NL);
+        alert(msg);
+      }
+    });
+
+    // Resize without triggering ResizeObserver loop warnings
+    function resize(){
+      const w = canvas.clientWidth || 0;
+      const h = canvas.clientHeight || 0;
+      if(w === 0 || h === 0){
+        hudShow('Canvas has zero size (width/height=0).');
+        return;
+      }
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+
+    let resizeQueued = false;
+    function queueResize(){
+      if(resizeQueued) return;
+      resizeQueued = true;
+      requestAnimationFrame(() => { resizeQueued = false; resize(); });
+    }
+
+    const viewEl = document.getElementById('view');
+    if(viewEl && window.ResizeObserver){
+      const ro = new ResizeObserver(() => { queueResize(); });
+      ro.observe(viewEl);
+    }
+    window.addEventListener('resize', queueResize);
+    queueResize();
+
+    // Render loop
+    const clock = new THREE.Clock();
+    function tick(){
+      const t = clock.getElapsedTime();
+      const placeNode = GRAPH.nodes.get('placement');
+      const strength = placeNode ? (parseFloat(placeNode.params.windStrength) || 0) : 0;
+      const speed = placeNode ? (parseFloat(placeNode.params.windSpeed) || 1) : 1;
+      applyWindToBranches(t, strength, speed);
+      applyWindToInstances(t, strength, speed);
+      controls.update();
+      renderer.render(scene, camera);
+      requestAnimationFrame(tick);
+    }
+    tick();
+
+    // Start
+    initNodeUI();
+    generate();
   </script>
 </body>
 </html>
