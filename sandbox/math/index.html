@@ -179,6 +179,7 @@
   <ol>
     <li><a href="#matrices">3つの行列：直交・正定値・非負</a></li>
     <li><a href="#definite">“definite” とは何か</a></li>
+    <li><a href="#dnotation">微分の記号：$d$・$\partial$・$D$・$\delta$・$\Delta$</a></li>
     <li><a href="#derivatives">Gradient・Jacobian・Hessian</a></li>
     <li><a href="#critical">Hessian で極値・鞍点を判定する</a></li>
     <li><a href="#vector">ベクトル解析：div・curl・Laplacian</a></li>
@@ -262,7 +263,7 @@ $$
 \mathbf{x}^\top A \mathbf{x} = \mathbf{y}^\top \Lambda \mathbf{y} = \lambda_1 y_1^2 + \lambda_2 y_2^2 + \cdots
 $$
 <p>つまり固有ベクトルの向きに軸を取り直せば、二次形式は「各軸ごとの $\lambda_i y_i^2$ の和」。固有値の符号がそのまま形（お椀・溝・鞍）を決めるのはこのため。</p>
-<div class="note"><strong>出てくる場所：</strong>Taylor 展開の2次項（§4）、最小二乗 $\lVert A\mathbf{x} - \mathbf{b} \rVert^2 = \mathbf{x}^\top A^\top A \mathbf{x} - \cdots$、ガウス分布の指数部 $-\tfrac{1}{2}(\mathbf{x} - \boldsymbol{\mu})^\top \Sigma^{-1} (\mathbf{x} - \boldsymbol{\mu})$（マハラノビス距離）、運動エネルギー $\tfrac{1}{2} \mathbf{v}^\top M \mathbf{v}$、GP の対数尤度の $-\tfrac{1}{2} \mathbf{y}^\top K^{-1} \mathbf{y}$。</div>
+<div class="note"><strong>出てくる場所：</strong>Taylor 展開の2次項（§5）、最小二乗 $\lVert A\mathbf{x} - \mathbf{b} \rVert^2 = \mathbf{x}^\top A^\top A \mathbf{x} - \cdots$、ガウス分布の指数部 $-\tfrac{1}{2}(\mathbf{x} - \boldsymbol{\mu})^\top \Sigma^{-1} (\mathbf{x} - \boldsymbol{\mu})$（マハラノビス距離）、運動エネルギー $\tfrac{1}{2} \mathbf{v}^\top M \mathbf{v}$、GP の対数尤度の $-\tfrac{1}{2} \mathbf{y}^\top K^{-1} \mathbf{y}$。</div>
 
 <div class="widget" id="qf">
   <p class="widget-title">触ってみる：二次形式 $f(\mathbf{x}) = a x_1^2 + 2b x_1 x_2 + c x_2^2$ の等高線</p>
@@ -286,8 +287,81 @@ $$
 </section>
 
 <!-- 3 -->
+<section id="dnotation">
+<h2>3. 微分の記号：$d$・$\partial$・$D$・$\delta$・$\Delta$</h2>
+<p>似た記号がいくつもあるが、<strong>変数が1つしかないなら全部同じ</strong>。変数が2つ以上あるときに初めて意味が分かれる。</p>
+
+<h3>$\partial$（partial）：他の変数を固定して、1つだけ動かす</h3>
+<p>$f(x, y) = x^2 y$ なら</p>
+$$
+\frac{\partial f}{\partial x} = 2xy \quad (y \text{ は定数扱い}),
+\qquad
+\frac{\partial f}{\partial y} = x^2 \quad (x \text{ は定数扱い})
+$$
+<p>§4 の gradient・Jacobian・Hessian はすべて偏微分を並べたもの。</p>
+
+<h3>$d$（dee）：関係する変数が全部動く</h3>
+<p>同じ $f = x^2 y$ で $\dfrac{df}{dx}$ を聞かれると、実は<strong>それだけでは決まらない</strong>。$y$ が $x$ と無関係なら $\partial f / \partial x$ と同じだが、$y = x^3$ のように $y$ が $x$ に依存していれば $y$ も一緒に動くので</p>
+$$
+\frac{df}{dx} = \underbrace{\frac{\partial f}{\partial x}}_{\text{直接}} + \underbrace{\frac{\partial f}{\partial y} \frac{dy}{dx}}_{y \text{ 経由}}
+= 2xy + x^2 \cdot 3x^2 = 5x^4
+$$
+<p>（$f = x^2 \cdot x^3 = x^5$ を直接微分しても $5x^4$。）これが<strong>全微分</strong>（total derivative）で、「直接の影響 ＋ 他の変数経由の間接的な影響」の合計。一般形は chain rule そのもの。</p>
+$$
+\frac{df}{dt} = \sum_i \frac{\partial f}{\partial x_i} \frac{dx_i}{dt} = \nabla f \cdot \dot{\mathbf{x}}
+$$
+<div class="note">合言葉：<strong>$\partial$ は「他は止めて」、$d$ は「全部まとめて」</strong>。$\partial$ は「何を固定しているか」が文脈で決まるので、熱力学では $\left(\dfrac{\partial U}{\partial T}\right)_V$ のように固定する変数を添えて書く。</div>
+
+<h3>$D/Dt$：流れに乗って見た時間変化（物質微分）</h3>
+<p>CFD で出てくるのがこれ。温度場 $T(x, y, z, t)$ に対して</p>
+<ul>
+<li>$\partial T / \partial t$：<strong>その場所にじっと立って</strong>見た温度変化（Euler 的な見方）</li>
+<li>$DT / Dt$：<strong>流体の粒子と一緒に流されながら</strong>見た温度変化（Lagrange 的な見方）</li>
+</ul>
+<p>粒子の位置 $\mathbf{x}(t)$ が時間とともに動くので、上の全微分の式をそのまま当てはめると</p>
+$$
+\frac{DT}{Dt} = \frac{\partial T}{\partial t} + \frac{\partial T}{\partial x}\frac{dx}{dt} + \frac{\partial T}{\partial y}\frac{dy}{dt} + \frac{\partial T}{\partial z}\frac{dz}{dt}
+= \frac{\partial T}{\partial t} + \mathbf{u} \cdot \nabla T
+$$
+<p>$\mathbf{u} \cdot \nabla T$ が<strong>移流項</strong>（advection term）。Navier–Stokes の左辺 $\rho \dfrac{D\mathbf{u}}{Dt} = \rho \left( \dfrac{\partial \mathbf{u}}{\partial t} + \mathbf{u} \cdot \nabla \mathbf{u} \right)$ は「粒子の加速度」なので、ニュートンの $m\mathbf{a} = \mathbf{F}$ をそのまま書いたもの。</p>
+<div class="card">
+<p><strong>CG 流体との対応：</strong>Bridson の semi-Lagrangian advection は「運ばれる量は流れに乗って変わらない」$\dfrac{Dq}{Dt} = 0$ を使う。つまり $q(\mathbf{x}, t + \Delta t) = q(\mathbf{x} - \mathbf{u}\Delta t,\ t)$ と、粒子を時間逆向きにたどって値を拾ってくる。<strong>$\partial$ と $D$ の差（移流項）を、座標を動かすことで処理している</strong>のがこの手法。</p>
+</div>
+
+<h3>$df$：全微分（微分形式）</h3>
+<p>分母なしで $df$ と書くときは「$\mathbf{x}$ を微小に動かしたときの $f$ の変化」で、</p>
+$$
+df = \frac{\partial f}{\partial x} dx + \frac{\partial f}{\partial y} dy = \nabla f \cdot d\mathbf{x}
+$$
+<p>$dx, dy$ を基底とするベクトルのようなもの（1-form）。§7.7 の外微分 $d$ で、0-form $f$ から 1-form $df$ を作る操作がこれ。</p>
+
+<h3>$\delta$：変分</h3>
+<p>変数ではなく<strong>関数そのもの</strong>を少し変えたときの変化。経路 $x(t)$ を $x(t) + \delta x(t)$ に変えたとき、作用 $S[x]$ がどう変わるかが $\delta S$。変分法・ラグランジュ力学・最適制御・ニューラルネットの汎関数微分で出てくる。物理では「仮想変位」$\delta \mathbf{r}$ も同じ記号。</p>
+<div class="warn">同じ $\delta$ でも <strong>Kronecker のデルタ</strong> $\delta_{ij}$（$i = j$ なら 1、それ以外 0）と <strong>Dirac のデルタ関数</strong> $\delta(x)$ は別物。文脈で判断する。</div>
+
+<h3>$\Delta$：差分（または Laplacian）</h3>
+<p>$\Delta x = x_2 - x_1$ のように<strong>有限の差</strong>。離散化で $dx$ の代わりに使い、$\Delta t$（時間刻み）、$\Delta x$（格子幅）は CFD の定番。差分法は $\dfrac{\partial f}{\partial x} \approx \dfrac{\Delta f}{\Delta x} = \dfrac{f(x + \Delta x) - f(x)}{\Delta x}$ とする近似。</p>
+<div class="warn">$\Delta f$ は <strong>Laplacian</strong> $\nabla^2 f$ の意味でも使われる（§6）。数学・物理の論文では Laplacian、数値計算では差分、のことが多い。</div>
+
+<h3>まとめ</h3>
+<div class="table-wrap">
+<table>
+<tr><th>記号</th><th>名前</th><th>意味</th><th>英語</th></tr>
+<tr><td class="sym">$\dfrac{df}{dx}$</td><td>常微分 / 全微分</td><td>変数が1つ、または関係する変数が全部動くときの変化率</td><td><q>dee f dee x</q> / <q>total derivative</q></td></tr>
+<tr><td class="sym">$\dfrac{\partial f}{\partial x}$</td><td>偏微分</td><td>他の変数を固定して $x$ だけ動かす</td><td><q>partial f partial x</q></td></tr>
+<tr><td class="sym">$\dfrac{Df}{Dt}$</td><td>物質微分</td><td>流れに乗って動く点での時間変化</td><td><q>capital D f D t</q> / <q>material derivative</q></td></tr>
+<tr><td class="sym">$df$</td><td>全微分（1-form）</td><td>$\nabla f \cdot d\mathbf{x}$</td><td><q>dee f</q> / <q>the differential of f</q></td></tr>
+<tr><td class="sym">$\delta f$</td><td>変分</td><td>関数そのものを少し変えたときの変化</td><td><q>delta f</q> / <q>the variation of f</q></td></tr>
+<tr><td class="sym">$\Delta x$</td><td>差分</td><td>有限の差。離散化で $dx$ の代わり</td><td><q>delta x</q></td></tr>
+<tr><td class="sym">$\dot{x}$, $x'$</td><td>時間微分 / 導関数</td><td>$\dot{x} = \dfrac{dx}{dt}$、$x' = \dfrac{dx}{d(\text{何か})}$</td><td><q>x dot</q>, <q>x prime</q></td></tr>
+<tr><td class="sym">$\partial_x f$, $f_x$</td><td>偏微分の略記</td><td>$\dfrac{\partial f}{\partial x}$ と同じ（論文でよく見る）</td><td><q>partial x of f</q>, <q>f sub x</q></td></tr>
+</table>
+</div>
+</section>
+
+<!-- 4 -->
 <section id="derivatives">
-<h2>3. Gradient・Jacobian・Hessian</h2>
+<h2>4. Gradient・Jacobian・Hessian</h2>
 
 <h3>Gradient<span class="en">勾配</span></h3>
 <p>スカラー関数 $f: \mathbb{R}^n \to \mathbb{R}$ を1回微分して並べた<strong>ベクトル</strong>。最も急に増える向き。</p>
@@ -342,9 +416,9 @@ $$
 </div>
 </section>
 
-<!-- 4 -->
+<!-- 5 -->
 <section id="critical">
-<h2>4. Hessian で極値・鞍点を判定する</h2>
+<h2>5. Hessian で極値・鞍点を判定する</h2>
 <p>gradient がゼロの点（臨界点）で使う判定法。</p>
 $$
 \nabla f = \mathbf{0} \text{ の点で} \quad
@@ -361,9 +435,9 @@ f(\mathbf{x} + \Delta\mathbf{x}) \approx f(\mathbf{x}) + \nabla f^\top \Delta\ma
 $$
 </section>
 
-<!-- 5 -->
+<!-- 6 -->
 <section id="vector">
-<h2>5. ベクトル解析：div・curl・Laplacian</h2>
+<h2>6. ベクトル解析：div・curl・Laplacian</h2>
 <p>演算子ベクトル $\nabla = \left[ \dfrac{\partial}{\partial x}, \dfrac{\partial}{\partial y}, \dfrac{\partial}{\partial z} \right]^\top$ を、内積・外積の記号を借りて形式的に掛け合わせたもの。</p>
 
 <h3>Divergence<span class="en">発散</span></h3>
@@ -428,7 +502,7 @@ $$
 \qquad
 \nabla \cdot (\nabla \times \mathbf{u}) = 0
 $$
-<p>「gradient 場は回転しない」「curl の場は湧き出さない」。上のウィジェットの「鞍型」は $f = \tfrac{1}{2}(x^2 - y^2)$ の gradient なので curl がゼロになっている。§6 の微分形式で、この2つは同じ一つの式 $d \circ d = 0$ だとわかる。</p>
+<p>「gradient 場は回転しない」「curl の場は湧き出さない」。上のウィジェットの「鞍型」は $f = \tfrac{1}{2}(x^2 - y^2)$ の gradient なので curl がゼロになっている。§7 の微分形式で、この2つは同じ一つの式 $d \circ d = 0$ だとわかる。</p>
 
 <h3>機械学習で出てくる仲間</h3>
 <ul>
@@ -437,12 +511,12 @@ $$
 </ul>
 </section>
 
-<!-- 6 -->
+<!-- 7 -->
 <section id="geometry">
-<h2>6. 微分幾何学への入口</h2>
+<h2>7. 微分幾何学への入口</h2>
 <p>微分幾何学は、ここまでの道具（Jacobian・正定値行列・Hessian・div/curl）を<strong>曲がった空間</strong>に持ち込む分野。新しい概念の多くは、実はこれまでの話の言い換えになっている。</p>
 
-<h3>6.1 多様体と接空間<span class="en">manifold / tangent space</span></h3>
+<h3>7.1 多様体と接空間<span class="en">manifold / tangent space</span></h3>
 <p><strong>多様体</strong> $M$ は「局所的には $\mathbb{R}^n$ に見える空間」。球面、トーラス、CG のなめらかなメッシュ表面などがそう。各点 $p$ でその点に接する平面（ベクトル空間）を<strong>接空間</strong> $T_p M$ と呼ぶ。速度ベクトルや gradient はここに住んでいる。</p>
 <div class="card">
 <p><strong>例：直交行列の集合も多様体。</strong>$SO(n) = \{ Q \mid Q^\top Q = I,\ \det Q = 1 \}$（回転行列全体）。単位行列 $I$ を通る曲線 $Q(t)$ を考えて $Q(t)^\top Q(t) = I$ を微分すると</p>
@@ -451,10 +525,10 @@ $$
 \;\xrightarrow{\;t = 0,\ Q = I\;}\;
 \Omega^\top + \Omega = 0
 $$
-<p>なので、$I$ での接空間は<strong>反対称行列</strong> $\Omega$ 全体。2次元なら $\Omega = \begin{bmatrix} 0 & -\omega \\ \omega & 0 \end{bmatrix}$ で、これは角速度そのもの。§5 の「Jacobian の反対称部分 = 回転」とも同じ構造。この接空間が §7 の <strong>Lie 代数</strong> $\mathfrak{so}(n)$。</p>
+<p>なので、$I$ での接空間は<strong>反対称行列</strong> $\Omega$ 全体。2次元なら $\Omega = \begin{bmatrix} 0 & -\omega \\ \omega & 0 \end{bmatrix}$ で、これは角速度そのもの。§6 の「Jacobian の反対称部分 = 回転」とも同じ構造。この接空間が §8 の <strong>Lie 代数</strong> $\mathfrak{so}(n)$。</p>
 </div>
 
-<h3>6.2 計量テンソル<span class="en">metric tensor</span></h3>
+<h3>7.2 計量テンソル<span class="en">metric tensor</span></h3>
 <p>曲がった空間（や曲がった座標）で、長さ・角度・面積を測るための <strong>positive definite な対称行列</strong> $g_{ij}$。微小な長さは</p>
 $$
 ds^2 = g_{ij} \, dx^i \, dx^j
@@ -465,7 +539,7 @@ $$
 $$
 g = J^\top J
 $$
-<p>$J$ が列フルランクなら $g$ は positive definite（§5 の Gauss–Newton と同じ形）。</p>
+<p>$J$ が列フルランクなら $g$ は positive definite（§6 の Gauss–Newton と同じ形）。</p>
 
 <div class="card">
 <p><strong>例1：極座標。</strong>$(r, \theta) \mapsto (r\cos\theta,\ r\sin\theta)$ の Jacobian は</p>
@@ -484,7 +558,7 @@ $$
 <p>極に近づく（$\sin\theta \to 0$）と経度方向の長さが縮む。世界地図で高緯度が引き伸ばされるのはこのため。</p>
 </div>
 
-<h3>6.3 曲面の曲率<span class="en">curvature of surfaces</span></h3>
+<h3>7.3 曲面の曲率<span class="en">curvature of surfaces</span></h3>
 <p>3次元空間の曲面 $\mathbf{x}(u, v)$ には2つの「基本形式」がある。</p>
 <ul>
 <li><strong>第一基本形式</strong>（first fundamental form）$\mathrm{I} = E\,du^2 + 2F\,du\,dv + G\,dv^2$：曲面上の計量そのもの。行列で書けば $\begin{bmatrix} E & F \\ F & G \end{bmatrix} = J^\top J$。</li>
@@ -513,7 +587,7 @@ $$
 </table>
 </div>
 
-<h3>6.4 驚異の定理<span class="en">Theorema Egregium</span></h3>
+<h3>7.4 驚異の定理<span class="en">Theorema Egregium</span></h3>
 <p>ガウス曲率 $K$ は第二基本形式を使って定義したのに、実は<strong>計量 $g$（第一基本形式）だけから計算できる</strong>（Gauss）。つまり曲面の上に住んでいる「2次元の生き物」が、外の3次元空間を知らなくても、長さを測るだけで $K$ がわかる。この「中から測れる性質」を<strong>内在的</strong>（intrinsic）と呼ぶ。</p>
 <div class="card">
 <p><strong>身近な帰結：</strong></p>
@@ -523,7 +597,7 @@ $$
 </ul>
 </div>
 
-<h3>6.5 クリストッフェル記号と測地線<span class="en">Christoffel symbols / geodesics</span></h3>
+<h3>7.5 クリストッフェル記号と測地線<span class="en">Christoffel symbols / geodesics</span></h3>
 <p>曲がった座標では、基底ベクトル自体が場所によって向きを変える。その変化分を表すのが<strong>クリストッフェル記号</strong>で、計量の微分から作れる。</p>
 $$
 \Gamma^k_{ij} = \frac{1}{2} g^{kl} \left( \partial_i g_{jl} + \partial_j g_{il} - \partial_l g_{ij} \right)
@@ -539,12 +613,12 @@ $$
 \qquad
 \ddot{\theta} + \frac{2}{r} \dot{r} \dot{\theta} = 0
 $$
-<p>平面上のただの直線を極座標で書いただけなのに、遠心力（$r\dot{\theta}^2$）やコリオリ力（$2\dot{r}\dot{\theta}$）のような項が出てくる。これらの「見かけの力」の正体がクリストッフェル記号。球面上なら測地線は大円になる（飛行機の航路）。回転の集合 $SO(3)$ 上の測地線が四元数の slerp（§7.5）。</p>
+<p>平面上のただの直線を極座標で書いただけなのに、遠心力（$r\dot{\theta}^2$）やコリオリ力（$2\dot{r}\dot{\theta}$）のような項が出てくる。これらの「見かけの力」の正体がクリストッフェル記号。球面上なら測地線は大円になる（飛行機の航路）。回転の集合 $SO(3)$ 上の測地線が四元数の slerp（§8.5）。</p>
 </div>
 <p>クリストッフェル記号を使ってベクトル場を正しく微分する操作を<strong>共変微分</strong>（covariant derivative）$\nabla_X Y$ と呼ぶ。$\nabla$ がここでも出てくるが、意味は「曲がった空間版の微分」。</p>
 
-<h3>6.6 曲がった空間のラプラシアン<span class="en">Laplace–Beltrami operator</span></h3>
-<p>§5 のラプラシアンを計量付きの空間に一般化したもの。</p>
+<h3>7.6 曲がった空間のラプラシアン<span class="en">Laplace–Beltrami operator</span></h3>
+<p>§6 のラプラシアンを計量付きの空間に一般化したもの。</p>
 $$
 \Delta f = \frac{1}{\sqrt{|g|}} \, \partial_i \!\left( \sqrt{|g|} \, g^{ij} \, \partial_j f \right)
 $$
@@ -557,7 +631,7 @@ $$
 </div>
 <p>CG では三角形メッシュ上の離散版（<strong>cotangent Laplacian</strong>）がメッシュの平滑化・パラメータ化・変形などで定番。この方向は「離散微分幾何学」（discrete differential geometry）と呼ばれ、Keenan Crane の講義ノート <em>Discrete Differential Geometry: An Applied Introduction</em> が CG 寄りの入門として有名。</p>
 
-<h3>6.7 微分形式と外微分<span class="en">differential forms / exterior derivative</span></h3>
+<h3>7.7 微分形式と外微分<span class="en">differential forms / exterior derivative</span></h3>
 <p>grad・curl・div は、実は<strong>外微分</strong> $d$ という一つの操作の別の顔。$k$ 次の微分形式（$k$-form）に $d$ をかけると $(k+1)$ 次になる。3次元では</p>
 $$
 \underbrace{f}_{\text{0-form}}
@@ -568,7 +642,7 @@ $$
 \;\xrightarrow{\;d\;=\;\text{div}\;}\;
 \underbrace{\rho}_{\text{3-form}}
 $$
-<p>そして常に $d \circ d = 0$。これが §5 の $\nabla \times \nabla f = \mathbf{0}$ と $\nabla \cdot (\nabla \times \mathbf{u}) = 0$ の正体。微分形式どうしの積は<strong>ウェッジ積</strong> $dx \wedge dy$ で、$dx \wedge dy = -dy \wedge dx$（向き付きの面積要素）。</p>
+<p>そして常に $d \circ d = 0$。これが §6 の $\nabla \times \nabla f = \mathbf{0}$ と $\nabla \cdot (\nabla \times \mathbf{u}) = 0$ の正体。微分形式どうしの積は<strong>ウェッジ積</strong> $dx \wedge dy$ で、$dx \wedge dy = -dy \wedge dx$（向き付きの面積要素）。</p>
 
 <p><strong>一般化されたストークスの定理：</strong></p>
 $$
@@ -584,9 +658,9 @@ $$
 <tr><td>2-form</td><td>ガウスの発散定理</td><td>$\iiint_V \nabla \cdot \mathbf{u}\,dV = \oiint_{\partial V} \mathbf{u} \cdot d\mathbf{S}$</td></tr>
 </table>
 </div>
-<div class="note">§5 のウィジェットの水車は、まさにグリーンの定理のイメージ。小さな円に沿って流れを足し合わせた量（循環）を面積で割ると curl になる。同様に、小さな円から出ていく流量を面積で割ると div になる。有限体積法（FVM）はこの「境界の流束で中身を数える」発想そのもの。</div>
+<div class="note">§6 のウィジェットの水車は、まさにグリーンの定理のイメージ。小さな円に沿って流れを足し合わせた量（循環）を面積で割ると curl になる。同様に、小さな円から出ていく流量を面積で割ると div になる。有限体積法（FVM）はこの「境界の流束で中身を数える」発想そのもの。</div>
 
-<h3>6.8 曲率テンソル<span class="en">Riemann curvature tensor</span></h3>
+<h3>7.8 曲率テンソル<span class="en">Riemann curvature tensor</span></h3>
 <p>3次元以上の空間では、曲がり具合は1つの数 $K$ では表せず、<strong>リーマン曲率テンソル</strong> $R^i{}_{jkl}$ で表す。「ベクトルを小さなループに沿って平行移動して戻ってくると、どれだけ向きがずれるか」を測る量。2次元ではガウス曲率 $K$ だけで情報が尽きる。一般相対論の重力はこの曲率で記述される。</p>
 
 <h3>学ぶ順番の目安</h3>
@@ -598,13 +672,13 @@ $$
 </ol>
 </section>
 
-<!-- 7 -->
+<!-- 8 -->
 <section id="lie">
-<h2>7. Lie 群・Lie 代数：回転と姿勢の数学</h2>
-<p>ロボットの姿勢（回転・位置）は、ベクトル空間ではなく<strong>曲がった空間</strong>に住んでいる。§6 の多様体に「掛け算」が加わったものが <strong>Lie 群</strong>で、manif・Sophus・GTSAM などのライブラリはこの上で状態推定をする。この章は Solà らの <em>A micro Lie theory for state estimation in robotics</em>（arXiv:1812.01537、<a href="https://github.com/artivis/manif">manif</a> の設計書）の流儀に合わせてある。</p>
+<h2>8. Lie 群・Lie 代数：回転と姿勢の数学</h2>
+<p>ロボットの姿勢（回転・位置）は、ベクトル空間ではなく<strong>曲がった空間</strong>に住んでいる。§7 の多様体に「掛け算」が加わったものが <strong>Lie 群</strong>で、manif・Sophus・GTSAM などのライブラリはこの上で状態推定をする。この章は Solà らの <em>A micro Lie theory for state estimation in robotics</em>（arXiv:1812.01537、<a href="https://github.com/artivis/manif">manif</a> の設計書）の流儀に合わせてある。</p>
 <div class="warn"><strong>Lie</strong> はノルウェーの数学者 Sophus Lie の名前で、英語の発音は「リー」（<q>lee</q>）。「ライ」ではない。</div>
 
-<h3>7.1 なぜ回転はベクトルのように足せないか</h3>
+<h3>8.1 なぜ回転はベクトルのように足せないか</h3>
 <p>3次元の回転行列 $R$ は 9 個の数を持つが、自由度は 3。制約を満たす行列の集合が</p>
 $$
 SO(3) = \{ R \in \mathbb{R}^{3 \times 3} \mid R^\top R = I,\ \det R = 1 \}
@@ -621,8 +695,8 @@ $$
 </table></div>
 <p>manif が扱うのはこれらと $\mathbb{R}^n$、$SGal(3)$、それらの束（Bundle）。</p>
 
-<h3>7.2 Lie 代数 = 単位元での接空間</h3>
-<p>§6.1 で計算したとおり、$SO(3)$ の単位元 $I$ での接空間は反対称行列の集合。これを <strong>Lie 代数</strong> $\mathfrak{so}(3)$ と呼ぶ。反対称行列は 3 つの数で決まるので、ベクトル $\boldsymbol{\omega} \in \mathbb{R}^3$ と行き来できる。</p>
+<h3>8.2 Lie 代数 = 単位元での接空間</h3>
+<p>§7.1 で計算したとおり、$SO(3)$ の単位元 $I$ での接空間は反対称行列の集合。これを <strong>Lie 代数</strong> $\mathfrak{so}(3)$ と呼ぶ。反対称行列は 3 つの数で決まるので、ベクトル $\boldsymbol{\omega} \in \mathbb{R}^3$ と行き来できる。</p>
 $$
 \boldsymbol{\omega}^\wedge = [\boldsymbol{\omega}]_\times =
 \begin{bmatrix} 0 & -\omega_z & \omega_y \\ \omega_z & 0 & -\omega_x \\ -\omega_y & \omega_x & 0 \end{bmatrix},
@@ -637,7 +711,7 @@ $$
 <p>で、ジャイロの読み値を積分して姿勢を更新するときの基本式。</p>
 <div class="note">接空間は<strong>ベクトル空間</strong>なので、足し算・スケール・平均・共分散がふつうに使える。「群の上では掛け算、接空間ではベクトル演算」と使い分けるのが Lie 理論の基本戦略。</div>
 
-<h3>7.3 exp と log：接空間と群を行き来する</h3>
+<h3>8.3 exp と log：接空間と群を行き来する</h3>
 <p>角速度 $\boldsymbol{\omega}$ で単位時間だけ回ったときの回転が<strong>指数写像</strong> $\exp$。$\boldsymbol{\omega} = \theta \mathbf{u}$（$\mathbf{u}$ は単位ベクトル）と書くと、行列指数が閉じた形になる（<strong>Rodrigues の公式</strong>）。</p>
 $$
 R = \exp([\boldsymbol{\omega}]_\times) = I + \sin\theta \, [\mathbf{u}]_\times + (1 - \cos\theta) \, [\mathbf{u}]_\times^2
@@ -657,7 +731,7 @@ $$
 <p>四元数は $S^3$（4次元の単位球面）という Lie 群の要素で、Lie 代数は $SO(3)$ と同じ $\mathbb{R}^3$。$\tfrac{1}{2}$ が付くのは、$S^3$ が $SO(3)$ を2重に覆っている（$\mathbf{q}$ と $-\mathbf{q}$ が同じ回転）ため。</p>
 </div>
 
-<h3>7.4 ⊕ と ⊖：多様体上の「足し算・引き算」</h3>
+<h3>8.4 ⊕ と ⊖：多様体上の「足し算・引き算」</h3>
 <p>群の要素 $X$ に接ベクトル $\boldsymbol{\tau}$ を「足す」、2つの要素の「差」を接ベクトルとして取り出す。これが manif の <code>plus</code> / <code>minus</code>。</p>
 $$
 X \oplus \boldsymbol{\tau} = X \exp(\boldsymbol{\tau}^\wedge),
@@ -677,13 +751,13 @@ $$
 <tr><td>随伴</td><td>$\mathrm{Ad}_X$</td><td><code>X.adj()</code></td></tr>
 </table></div>
 
-<h3>7.5 補間：slerp は Lie 群上の測地線</h3>
+<h3>8.5 補間：slerp は Lie 群上の測地線</h3>
 <p>姿勢 $A$ から $B$ へなめらかに動かしたい。接空間での差 $\boldsymbol{\tau} = B \ominus A$ を $t$ 倍して戻せばよい。</p>
 $$
 X(t) = A \oplus t \,(B \ominus A) = A \exp\!\big( t \log(A^{-1} B) \big),
 \qquad t \in [0, 1]
 $$
-<p>$SO(3)$ でこれを四元数で書いたものが <strong>slerp</strong>（spherical linear interpolation）。角速度一定で、最短の回転軸まわりに回る。§6.5 の言葉でいうと、$SO(3)$ の自然な（両側不変な）計量に関する<strong>測地線</strong>。</p>
+<p>$SO(3)$ でこれを四元数で書いたものが <strong>slerp</strong>（spherical linear interpolation）。角速度一定で、最短の回転軸まわりに回る。§7.5 の言葉でいうと、$SO(3)$ の自然な（両側不変な）計量に関する<strong>測地線</strong>。</p>
 <p>$SE(3)$ では「回転と並進を別々に補間する」のと「$\mathfrak{se}(3)$ で補間する」は<strong>別の軌道</strong>になる。後者は一定の twist によるネジ運動で、途中の位置が円弧を描く。下のウィジェットは $SE(2)$ でその違いを見るもの。</p>
 
 <div class="widget" id="se2">
@@ -699,8 +773,8 @@ $$
 
 <p>オイラー角を線形補間するとジンバルロックや不自然な軌道が出るのに対して、Lie 群上の補間にはそれがない。CG のアニメーションやロボットの軌道生成で「四元数 slerp を使え」と言われる理由がこれ。</p>
 
-<h3>7.6 多様体上の Jacobian と最適化</h3>
-<p>§3 の Jacobian を Lie 群の間の関数 $f: \mathcal{M} \to \mathcal{N}$ に拡張するには、入力の摂動と出力の差を接空間で測ればよい。</p>
+<h3>8.6 多様体上の Jacobian と最適化</h3>
+<p>§4 の Jacobian を Lie 群の間の関数 $f: \mathcal{M} \to \mathcal{N}$ に拡張するには、入力の摂動と出力の差を接空間で測ればよい。</p>
 $$
 \frac{D f(X)}{D X} = \lim_{\boldsymbol{\tau} \to \mathbf{0}} \frac{ f(X \oplus \boldsymbol{\tau}) \ominus f(X) }{\boldsymbol{\tau}}
 $$
@@ -715,15 +789,15 @@ J_r(\boldsymbol{\omega}) = I - \frac{1 - \cos\theta}{\theta^2} [\boldsymbol{\ome
 $$
 <p>$\theta \to 0$ で $J_r \to I$。IMU の事前積分（preintegration）や EKF の誤差状態の伝播で頻出。</p>
 </div>
-<p><strong>最適化：</strong>§5 の Gauss–Newton を Lie 群上で回すには、状態の更新を $X \leftarrow X \oplus \boldsymbol{\delta}$ にし、Jacobian を上の定義で取る。残差 $\mathbf{r}(X)$ に対して</p>
+<p><strong>最適化：</strong>§6 の Gauss–Newton を Lie 群上で回すには、状態の更新を $X \leftarrow X \oplus \boldsymbol{\delta}$ にし、Jacobian を上の定義で取る。残差 $\mathbf{r}(X)$ に対して</p>
 $$
 (J^\top J) \, \boldsymbol{\delta} = -J^\top \mathbf{r},
 \qquad X \leftarrow X \oplus \boldsymbol{\delta}
 $$
-<p>を繰り返す。$J^\top J$ はやはり positive semidefinite（§1・§5）。Ceres の <code>Manifold</code>、GTSAM、g2o はこれを実装している。SLAM・バンドル調整・ハンドアイキャリブレーションはほぼこの形。</p>
+<p>を繰り返す。$J^\top J$ はやはり positive semidefinite（§1・§6）。Ceres の <code>Manifold</code>、GTSAM、g2o はこれを実装している。SLAM・バンドル調整・ハンドアイキャリブレーションはほぼこの形。</p>
 <p><strong>不確かさ：</strong>共分散も接空間で定義する。$X = \bar{X} \oplus \boldsymbol{\tau},\ \boldsymbol{\tau} \sim \mathcal{N}(\mathbf{0}, \Sigma)$ とすれば $\Sigma$ は $SE(3)$ なら $6 \times 6$ の positive definite 行列。§2 のマハラノビス距離 $\boldsymbol{\tau}^\top \Sigma^{-1} \boldsymbol{\tau}$ がそのまま使える。</p>
 
-<h3>7.7 随伴（adjoint）：接ベクトルの座標系を変える</h3>
+<h3>8.7 随伴（adjoint）：接ベクトルの座標系を変える</h3>
 <p>右側の摂動を左側に持っていく線形変換。</p>
 $$
 X \exp(\boldsymbol{\tau}^\wedge) = \exp\big( (\mathrm{Ad}_X \boldsymbol{\tau})^\wedge \big) X
@@ -744,9 +818,9 @@ $$
 </ol>
 </section>
 
-<!-- 8 -->
+<!-- 9 -->
 <section id="reading">
-<h2>8. 英語での読み方</h2>
+<h2>9. 英語での読み方</h2>
 
 <h3>ベクトル解析</h3>
 <div class="table-wrap">
@@ -771,6 +845,9 @@ $$
 <tr><td class="sym">$\dfrac{\partial^2 f}{\partial x^2}$</td><td><q>partial squared f partial x squared</q> / <q>second partial of f with respect to x</q></td></tr>
 <tr><td class="sym">$\dfrac{\partial^2 f}{\partial x \partial y}$</td><td><q>partial squared f partial x partial y</q></td></tr>
 <tr><td class="sym">$\dot{x},\ \ddot{x}$</td><td><q>x dot</q>, <q>x double dot</q>（時間微分）</td></tr>
+<tr><td class="sym">$\dfrac{Df}{Dt}$</td><td><q>capital D f D t</q> / <q>the material derivative of f</q></td></tr>
+<tr><td class="sym">$\delta f$</td><td><q>delta f</q> / <q>the variation of f</q></td></tr>
+<tr><td class="sym">$\partial_x f$, $f_x$</td><td><q>partial x of f</q> / <q>f sub x</q></td></tr>
 </table>
 </div>
 <div class="warn">$\partial$ は英語では <q>partial</q>（または <q>del</q>）。日本でよく聞く「ラウンド」は英語圏ではまず通じない。</div>
