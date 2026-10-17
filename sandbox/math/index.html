@@ -1,0 +1,1484 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>行列・微分・多様体メモ</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<style>
+  :root {
+    --bg: #fdfcf9;
+    --fg: #22252a;
+    --muted: #6b7078;
+    --accent: #2f6f8f;
+    --accent-soft: #e6f0f4;
+    --line: #e2e0da;
+    --card: #ffffff;
+    --warn: #b0562a;
+    --warn-soft: #fbeee6;
+    --pos: #d9692b;
+    --neg: #2f7fbf;
+    --arrow: #3a3f46;
+    --particle: #1f2328;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17191c;
+      --fg: #e4e6ea;
+      --muted: #9aa0a8;
+      --accent: #7fbad6;
+      --accent-soft: #1f2d34;
+      --line: #2e3237;
+      --card: #1e2125;
+      --warn: #e59a72;
+      --warn-soft: #33241c;
+      --pos: #e8834a;
+      --neg: #4f9bd6;
+      --arrow: #c3c8cf;
+      --particle: #f2f4f7;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Segoe UI", sans-serif;
+    line-height: 1.8;
+    font-size: 16px;
+  }
+  main { max-width: 820px; margin: 0 auto; padding: 32px 16px 80px; }
+  header { margin-bottom: 32px; }
+  h1 { font-size: 1.7rem; margin: 0 0 4px; line-height: 1.4; }
+  .lead { color: var(--muted); margin: 0; }
+  nav.toc {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 20px; margin: 24px 0 40px;
+  }
+  nav.toc ol { margin: 0; padding-left: 1.2em; }
+  nav.toc a { color: var(--accent); text-decoration: none; }
+  nav.toc a:hover { text-decoration: underline; }
+  /* collapsible TOC: hamburger button + panel */
+  .toc-btn {
+    position: fixed; top: 14px; right: 14px; z-index: 30;
+    width: 40px; height: 40px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--card); color: var(--fg);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); padding: 0;
+  }
+  .toc-btn svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+  .toc-btn .ic-close { display: none; }
+  body.toc-open .toc-btn .ic-menu { display: none; }
+  body.toc-open .toc-btn .ic-close { display: block; }
+  header { padding-right: 48px; }
+
+  aside.side-toc {
+    position: fixed; z-index: 25; top: 0; right: 0; height: 100vh; width: 272px;
+    background: var(--card); border-left: 1px solid var(--line);
+    padding: 64px 16px 24px; overflow-y: auto; box-sizing: border-box;
+    transform: translateX(100%); transition: transform 0.25s ease;
+    font-size: 0.86rem; line-height: 1.5;
+  }
+  body.toc-open aside.side-toc { transform: none; }
+  aside.side-toc .side-title { color: var(--muted); font-size: 0.75rem; letter-spacing: 0.08em; margin: 0 0 8px 12px; }
+  aside.side-toc ol { list-style: none; margin: 0; padding: 0; border-left: 2px solid var(--line); }
+  aside.side-toc li a {
+    display: block; padding: 6px 12px; margin-left: -2px;
+    color: var(--muted); text-decoration: none; border-left: 2px solid transparent;
+  }
+  aside.side-toc li a:hover { color: var(--fg); }
+  aside.side-toc li a.on { color: var(--accent); border-left-color: var(--accent); font-weight: 600; }
+  .toc-backdrop {
+    position: fixed; inset: 0; z-index: 20; background: rgba(0, 0, 0, 0.25);
+    opacity: 0; pointer-events: none; transition: opacity 0.25s;
+  }
+  body.toc-open .toc-backdrop { opacity: 1; pointer-events: auto; }
+
+  /* wide screens: the panel becomes a rail beside the text instead of a drawer */
+  @media (min-width: 1280px) {
+    nav.toc { display: none; }
+    aside.side-toc {
+      top: 48px; right: auto; left: calc(50% + 410px + 32px);
+      height: auto; max-height: calc(100vh - 80px); width: 230px;
+      background: transparent; border: none; padding: 0;
+      transform: none; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+      font-size: 0.84rem;
+    }
+    body.toc-open aside.side-toc { opacity: 1; pointer-events: auto; }
+    .toc-backdrop { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    aside.side-toc, .toc-backdrop { transition: none; }
+  }
+  html { scroll-behavior: smooth; }
+  section[id] { scroll-margin-top: 24px; }
+  h2 {
+    font-size: 1.3rem; margin: 56px 0 12px; padding-bottom: 6px;
+    border-bottom: 2px solid var(--accent);
+  }
+  h3 { font-size: 1.08rem; margin: 28px 0 8px; color: var(--accent); }
+  .en { color: var(--muted); font-weight: normal; font-size: 0.9em; margin-left: 6px; }
+  p { margin: 8px 0; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 4px 18px; margin: 12px 0;
+  }
+  .note { background: var(--accent-soft); border-radius: 8px; padding: 10px 16px; margin: 14px 0; }
+  .warn {
+    background: var(--warn-soft); border-left: 4px solid var(--warn);
+    border-radius: 6px; padding: 10px 16px; margin: 14px 0;
+  }
+  .table-wrap { overflow-x: auto; margin: 12px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+  th, td { border-bottom: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: middle; }
+  th { color: var(--muted); font-weight: 600; font-size: 0.85rem; white-space: nowrap; }
+  td.sym { white-space: nowrap; }
+  q { quotes: "“" "”"; font-style: italic; }
+  .katex-display { overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+
+  /* widgets */
+  .widget {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px; margin: 18px 0;
+  }
+  .widget-title { font-weight: 600; margin: 0 0 8px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-bottom: 10px; }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+  .seg button, .presets button {
+    font: inherit; font-size: 0.85rem; padding: 4px 10px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--fg); cursor: pointer;
+  }
+  .seg button.on { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+  .seg-label { font-size: 0.8rem; color: var(--muted); margin-right: 2px; }
+  canvas { display: block; width: 100%; border-radius: 8px; touch-action: none; }
+  .canvas-box { max-width: 520px; margin: 0 auto; }
+  .readout { font-size: 0.92rem; margin-top: 10px; }
+  .readout .vals { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+  .hint { font-size: 0.85rem; color: var(--muted); margin: 6px 0 0; }
+  .legend { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--muted); margin-top: 6px; justify-content: center; }
+  .legend .bar { width: 140px; height: 10px; border-radius: 5px; background: linear-gradient(90deg, var(--neg), var(--bg), var(--pos)); border: 1px solid var(--line); }
+  .qf-layout { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  @media (min-width: 680px) { .qf-layout { grid-template-columns: 1.1fr 1fr; align-items: start; } }
+  .slider { display: grid; grid-template-columns: 20px 1fr 44px; gap: 8px; align-items: center; font-size: 0.9rem; }
+  .slider input { width: 100%; accent-color: var(--accent); }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 0.85rem; font-weight: 600; background: var(--accent-soft); color: var(--accent); }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  label.check { font-size: 0.85rem; display: inline-flex; align-items: center; gap: 4px; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>行列・微分・多様体メモ</h1>
+  <p class="lead">行列・微分・多様体・Lie 群と、その英語での読み方。orthogonal / positive definite / non-negative から、gradient・Jacobian・Hessian、div・curl、微分幾何学、ロボティクスの Lie 群まで。</p>
+</header>
+
+<nav class="toc">
+  <ol>
+    <li><a href="#matrices">3つの行列：直交・正定値・非負</a></li>
+    <li><a href="#definite">“definite” とは何か</a></li>
+    <li><a href="#derivatives">Gradient・Jacobian・Hessian</a></li>
+    <li><a href="#critical">Hessian で極値・鞍点を判定する</a></li>
+    <li><a href="#vector">ベクトル解析：div・curl・Laplacian</a></li>
+    <li><a href="#geometry">微分幾何学への入口</a></li>
+    <li><a href="#lie">Lie 群・Lie 代数：回転と姿勢の数学</a></li>
+    <li><a href="#reading">英語での読み方</a></li>
+  </ol>
+</nav>
+
+<!-- 1 -->
+<section id="matrices">
+<h2>1. 3つの行列：直交・正定値・非負</h2>
+
+<h3>Orthogonal matrix<span class="en">直交行列</span></h3>
+<p>$Q^\top Q = I$ を満たす行列。転置がそのまま逆行列になる。各列（各行）は互いに直交し、長さ 1。幾何的には回転や鏡映で、ベクトルの長さや角度を変えない。</p>
+$$
+Q = \begin{bmatrix} \cos\theta & -\sin\theta \\ \sin\theta & \cos\theta \end{bmatrix}
+$$
+
+<h3>Positive definite matrix<span class="en">正定値行列</span></h3>
+<p>対称行列 $A$ で、ゼロでない任意のベクトル $\mathbf{x}$ に対して $\mathbf{x}^\top A \mathbf{x} > 0$。固有値がすべて正、と同値。Cholesky 分解・共役勾配法が使える条件。</p>
+
+<h3>Non-negative matrix<span class="en">非負行列</span></h3>
+<p>要素がすべて $0$ 以上の行列。NMF（非負値行列因子分解）$V \approx WH$ に必要なのはこれ。</p>
+
+<div class="warn">
+<strong>正定値と非負は無関係。</strong>どちらもどちらを包含しない。
+<ul>
+<li>$\begin{bmatrix} 1 & 2 \\ 2 & 1 \end{bmatrix}$：要素はすべて正だが、固有値 $3, -1$ なので正定値ではない（indefinite）。</li>
+<li>$\begin{bmatrix} 2 & -1 \\ -1 & 2 \end{bmatrix}$：負の要素があるが、固有値 $1, 3$ なので正定値。</li>
+</ul>
+<p>非負は「成分ひとつひとつの符号」、正定値は「行列全体の性質（固有値・二次形式）」の話。</p>
+</div>
+
+<h3>CFD で出てくる正定値の帯行列</h3>
+<p>1次元ポアソン方程式 $-u'' = f$ を2次中心差分で離散化すると、非対角が負なのに正定値な三重対角行列になる。</p>
+$$
+\begin{bmatrix}
+2 & -1 & 0 & 0 \\
+-1 & 2 & -1 & 0 \\
+0 & -1 & 2 & -1 \\
+0 & 0 & -1 & 2
+\end{bmatrix}
+$$
+<p>「対角優位な対称行列で、対角成分が正なら正定値」という定理で説明できる。</p>
+
+<h3>GP のカーネル行列</h3>
+<p>正しいカーネルから作った行列は <strong>positive semidefinite</strong>。点の重複や数値誤差で固有値が $0$ に近づくと Cholesky が失敗するので、$K + \sigma^2 I$ のように対角に小さな値（ノイズ項・jitter）を足して positive definite にしてから分解する。</p>
+</section>
+
+<!-- 2 -->
+<section id="definite">
+<h2>2. “definite” とは何か</h2>
+<p><strong>definite = 符号が「定まっている」</strong>。何の符号かというと、二次形式 $\mathbf{x}^\top A \mathbf{x}$ の符号。</p>
+
+<div class="table-wrap">
+<table>
+<tr><th>英語</th><th>日本語</th><th>$\mathbf{x}^\top A \mathbf{x}$（$\mathbf{x} \neq \mathbf{0}$）</th><th>固有値</th><th>形</th></tr>
+<tr><td>positive definite</td><td>正定値</td><td>常に $> 0$</td><td>すべて正</td><td>お椀</td></tr>
+<tr><td>positive semidefinite</td><td>半正定値</td><td>常に $\geq 0$</td><td>すべて $\geq 0$</td><td>溝（雨どい）</td></tr>
+<tr><td>negative definite</td><td>負定値</td><td>常に $< 0$</td><td>すべて負</td><td>伏せたお椀</td></tr>
+<tr><td>indefinite</td><td>不定値</td><td>正にも負にもなる</td><td>正と負が混在</td><td>馬の鞍</td></tr>
+</table>
+</div>
+
+<h3>二次形式とは<span class="en">quadratic form</span></h3>
+<p>1変数の $a x^2$ を多変数にしたもの。対称行列 $A$ を使って書く。</p>
+$$
+f(\mathbf{x}) = \mathbf{x}^\top A \mathbf{x} = \sum_{i,j} A_{ij} \, x_i x_j
+$$
+$$
+\text{2次元なら：}\quad
+\begin{bmatrix} x_1 & x_2 \end{bmatrix}
+\begin{bmatrix} a & b \\ b & c \end{bmatrix}
+\begin{bmatrix} x_1 \\ x_2 \end{bmatrix}
+= a x_1^2 + 2b x_1 x_2 + c x_2^2
+$$
+<p>どの項も「変数2つの積」なので「二次」形式。交差項 $x_1 x_2$ の係数 $2b$ が $A$ の両側に半分ずつ入っている。非対称な行列で書いても $\tfrac{1}{2}(A + A^\top)$ に置き換えて同じ値になるので、対称行列だけ考えれば十分。</p>
+<p>固有値分解 $A = Q \Lambda Q^\top$（$Q$ は固有ベクトルを並べた直交行列、§1）で座標を $\mathbf{y} = Q^\top \mathbf{x}$ と回すと、交差項が消える。</p>
+$$
+\mathbf{x}^\top A \mathbf{x} = \mathbf{y}^\top \Lambda \mathbf{y} = \lambda_1 y_1^2 + \lambda_2 y_2^2 + \cdots
+$$
+<p>つまり固有ベクトルの向きに軸を取り直せば、二次形式は「各軸ごとの $\lambda_i y_i^2$ の和」。固有値の符号がそのまま形（お椀・溝・鞍）を決めるのはこのため。</p>
+<div class="note"><strong>出てくる場所：</strong>Taylor 展開の2次項（§4）、最小二乗 $\lVert A\mathbf{x} - \mathbf{b} \rVert^2 = \mathbf{x}^\top A^\top A \mathbf{x} - \cdots$、ガウス分布の指数部 $-\tfrac{1}{2}(\mathbf{x} - \boldsymbol{\mu})^\top \Sigma^{-1} (\mathbf{x} - \boldsymbol{\mu})$（マハラノビス距離）、運動エネルギー $\tfrac{1}{2} \mathbf{v}^\top M \mathbf{v}$、GP の対数尤度の $-\tfrac{1}{2} \mathbf{y}^\top K^{-1} \mathbf{y}$。</div>
+
+<div class="widget" id="qf">
+  <p class="widget-title">触ってみる：二次形式 $f(\mathbf{x}) = a x_1^2 + 2b x_1 x_2 + c x_2^2$ の等高線</p>
+  <div class="qf-layout">
+    <div>
+      <div class="canvas-box"><canvas id="qf-canvas"></canvas></div>
+      <div class="legend"><span>負</span><span class="bar"></span><span>正</span></div>
+    </div>
+    <div>
+      <div id="qf-matrix"></div>
+      <div class="slider"><span>$a$</span><input type="range" id="qf-a" min="-2" max="2" step="0.1" value="1"><span id="qf-a-v"></span></div>
+      <div class="slider"><span>$b$</span><input type="range" id="qf-b" min="-2" max="2" step="0.1" value="0"><span id="qf-b-v"></span></div>
+      <div class="slider"><span>$c$</span><input type="range" id="qf-c" min="-2" max="2" step="0.1" value="1"><span id="qf-c-v"></span></div>
+      <p style="margin-top:10px"><span id="qf-eig"></span></p>
+      <p><span class="badge" id="qf-class"></span></p>
+      <p class="hint">線は固有ベクトルの向き（オレンジ＝固有値が正、青＝負）。</p>
+      <div class="presets" id="qf-presets"></div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- 3 -->
+<section id="derivatives">
+<h2>3. Gradient・Jacobian・Hessian</h2>
+
+<h3>Gradient<span class="en">勾配</span></h3>
+<p>スカラー関数 $f: \mathbb{R}^n \to \mathbb{R}$ を1回微分して並べた<strong>ベクトル</strong>。最も急に増える向き。</p>
+$$
+\nabla f = \begin{bmatrix} \dfrac{\partial f}{\partial x_1} \\[8pt] \vdots \\[4pt] \dfrac{\partial f}{\partial x_n} \end{bmatrix}
+$$
+<div class="card">
+<p><strong>例：</strong>$f(x_1, x_2) = x_1^2 x_2 + 3x_2$ のとき</p>
+$$
+\nabla f = \begin{bmatrix} 2x_1 x_2 \\ x_1^2 + 3 \end{bmatrix},
+\qquad \nabla f(1, 2) = \begin{bmatrix} 4 \\ 4 \end{bmatrix}
+$$
+</div>
+
+<h3>Jacobian<span class="en">ヤコビ行列</span></h3>
+<p>ベクトル値関数 $\mathbf{g}: \mathbb{R}^n \to \mathbb{R}^m$ を1回微分して並べた <strong>$m \times n$ 行列</strong>。行が出力、列が入力。</p>
+$$
+J_{ij} = \frac{\partial g_i}{\partial x_j}
+$$
+<div class="card">
+<p><strong>例：</strong>$\mathbf{g}(x_1, x_2) = \begin{bmatrix} x_1^2 x_2 \\ 5x_1 + \sin x_2 \end{bmatrix}$ のとき</p>
+$$
+J = \begin{bmatrix} 2x_1 x_2 & x_1^2 \\ 5 & \cos x_2 \end{bmatrix}
+$$
+</div>
+<p>ニュートン法 $J \, \Delta\mathbf{x} = -\mathbf{g}$ で出てくるのがこれ。</p>
+
+<h3>Hessian<span class="en">ヘッセ行列</span></h3>
+<p>スカラー関数 $f$ を<strong>2回</strong>微分して並べた <strong>$n \times n$ 対称行列</strong>。曲がり具合（曲率）を表す。</p>
+$$
+H_{ij} = \frac{\partial^2 f}{\partial x_i \partial x_j},
+\qquad H = J(\nabla f)
+$$
+<div class="note"><strong>Hessian = gradient の Jacobian</strong>。なめらかな関数では $\dfrac{\partial^2 f}{\partial x_i \partial x_j} = \dfrac{\partial^2 f}{\partial x_j \partial x_i}$（シュワルツの定理）なので対称になる。</div>
+<div class="card">
+<p><strong>例：</strong>$f = x_1^2 x_2 + 3x_2$ の gradient をもう一度微分して</p>
+$$
+H = \begin{bmatrix} 2x_2 & 2x_1 \\ 2x_1 & 0 \end{bmatrix},
+\qquad H(1, 2) = \begin{bmatrix} 4 & 2 \\ 2 & 0 \end{bmatrix}
+$$
+<p>$\det H = -4 < 0$ なので固有値は正と負が1つずつ → indefinite（鞍型）。</p>
+<p><strong>お椀の例：</strong>$f = x_1^2 + x_2^2$ なら $H = \begin{bmatrix} 2 & 0 \\ 0 & 2 \end{bmatrix}$ で positive definite。一般に $f = \mathbf{x}^\top A \mathbf{x}$（$A$ 対称）の Hessian は $2A$。</p>
+</div>
+
+<div class="table-wrap">
+<table>
+<tr><th></th><th>入力 → 出力</th><th>微分の回数</th><th>形</th></tr>
+<tr><td>Gradient $\nabla f$</td><td>$\mathbb{R}^n \to \mathbb{R}$</td><td>1回</td><td>$n$ 次元ベクトル</td></tr>
+<tr><td>Jacobian $J$</td><td>$\mathbb{R}^n \to \mathbb{R}^m$</td><td>1回</td><td>$m \times n$ 行列</td></tr>
+<tr><td>Hessian $H$</td><td>$\mathbb{R}^n \to \mathbb{R}$</td><td>2回</td><td>$n \times n$ 対称行列</td></tr>
+</table>
+</div>
+</section>
+
+<!-- 4 -->
+<section id="critical">
+<h2>4. Hessian で極値・鞍点を判定する</h2>
+<p>gradient がゼロの点（臨界点）で使う判定法。</p>
+$$
+\nabla f = \mathbf{0} \text{ の点で} \quad
+\begin{cases}
+H \text{ が positive definite} & \Rightarrow \text{極小（お椀の底）} \\
+H \text{ が negative definite} & \Rightarrow \text{極大（頂上）} \\
+H \text{ が indefinite} & \Rightarrow \text{鞍点} \\
+H \text{ が semidefinite} & \Rightarrow \text{これだけでは判定不能}
+\end{cases}
+$$
+<p>根拠は多変数の Taylor 展開。2次の項がまさに二次形式になっている。</p>
+$$
+f(\mathbf{x} + \Delta\mathbf{x}) \approx f(\mathbf{x}) + \nabla f^\top \Delta\mathbf{x} + \frac{1}{2} \Delta\mathbf{x}^\top H \, \Delta\mathbf{x}
+$$
+</section>
+
+<!-- 5 -->
+<section id="vector">
+<h2>5. ベクトル解析：div・curl・Laplacian</h2>
+<p>演算子ベクトル $\nabla = \left[ \dfrac{\partial}{\partial x}, \dfrac{\partial}{\partial y}, \dfrac{\partial}{\partial z} \right]^\top$ を、内積・外積の記号を借りて形式的に掛け合わせたもの。</p>
+
+<h3>Divergence<span class="en">発散</span></h3>
+<p>ベクトル場 $\mathbf{u}: \mathbb{R}^n \to \mathbb{R}^n$（例：速度場）の湧き出し。入力と出力の次元が同じなので Jacobian が正方行列になり、trace が定義できる。</p>
+$$
+\nabla \cdot \mathbf{u} = \frac{\partial u_x}{\partial x} + \frac{\partial u_y}{\partial y} + \frac{\partial u_z}{\partial z} = \operatorname{tr}(J_{\mathbf{u}})
+$$
+<p>CFD では $J_{\mathbf{u}}$ を<strong>速度勾配テンソル</strong> $\nabla \mathbf{u}$ と呼ぶ。対称部分がひずみ速度、反対称部分が回転に対応。</p>
+
+<h3>Curl<span class="en">回転</span></h3>
+<p>ベクトル場の渦の強さ。3次元では渦度ベクトル $\boldsymbol{\omega} = \nabla \times \mathbf{u}$。2次元では向きが紙面に垂直なので、スカラーとして扱える。</p>
+$$
+\operatorname{curl} \mathbf{u} = \frac{\partial u_y}{\partial x} - \frac{\partial u_x}{\partial y}
+\qquad (\text{2次元、正 = 反時計回り})
+$$
+<p>イメージは「その点に小さな水車を置いたときの回転速度」。水車は角速度 $\tfrac{1}{2} \operatorname{curl} \mathbf{u}$ で回る。</p>
+
+<div class="widget" id="vf">
+  <p class="widget-title">触ってみる：2次元ベクトル場の div と curl</p>
+  <div class="controls">
+    <div class="seg" id="vf-fields"></div>
+  </div>
+  <div class="controls">
+    <span class="seg-label">背景</span>
+    <div class="seg" id="vf-bg">
+      <button data-v="none">なし</button>
+      <button data-v="div" class="on">div</button>
+      <button data-v="curl">curl</button>
+    </div>
+    <label class="check"><input type="checkbox" id="vf-particles" checked> 粒子を流す</label>
+  </div>
+  <div class="canvas-box"><canvas id="vf-canvas"></canvas></div>
+  <div class="legend"><span>負</span><span class="bar"></span><span>正</span></div>
+  <div class="readout">
+    <div id="vf-formula"></div>
+    <div class="vals"><span id="vf-probe-div"></span><span id="vf-probe-curl"></span><span id="vf-probe-wheel"></span></div>
+    <p class="hint" id="vf-note"></p>
+    <p class="hint">キャンバスをクリック（ドラッグ）すると水車を置く場所を変えられます。</p>
+  </div>
+</div>
+
+<div class="card">
+<p><strong>計算例：</strong>$\mathbf{u}(x, y) = \begin{bmatrix} x^2 y \\ -x y^2 \end{bmatrix}$（上の「計算例」）のとき</p>
+$$
+J_{\mathbf{u}} = \begin{bmatrix} 2xy & x^2 \\ -y^2 & -2xy \end{bmatrix},
+\qquad \nabla \cdot \mathbf{u} = 2xy - 2xy = 0,
+\qquad \operatorname{curl} \mathbf{u} = -y^2 - x^2
+$$
+<p>どこでも湧き出しゼロ → 非圧縮な流れ。pressure projection はこの $\nabla \cdot \mathbf{u} = 0$ を満たすよう速度場を直すステップ。</p>
+</div>
+
+<h3>Laplacian<span class="en">ラプラシアン</span></h3>
+<p>gradient の divergence。gradient の Jacobian が Hessian なので、その trace。</p>
+$$
+\nabla^2 f = \nabla \cdot \nabla f = \frac{\partial^2 f}{\partial x_1^2} + \cdots + \frac{\partial^2 f}{\partial x_n^2} = \operatorname{tr}(H)
+$$
+<p>§1 の $\begin{bmatrix} 2 & -1 \\ -1 & 2 \end{bmatrix}$ 型の帯行列は $-\nabla^2$ を離散化したもの。</p>
+
+<h3>覚えておくと便利な恒等式</h3>
+$$
+\nabla \times (\nabla f) = \mathbf{0},
+\qquad
+\nabla \cdot (\nabla \times \mathbf{u}) = 0
+$$
+<p>「gradient 場は回転しない」「curl の場は湧き出さない」。上のウィジェットの「鞍型」は $f = \tfrac{1}{2}(x^2 - y^2)$ の gradient なので curl がゼロになっている。§6 の微分形式で、この2つは同じ一つの式 $d \circ d = 0$ だとわかる。</p>
+
+<h3>機械学習で出てくる仲間</h3>
+<ul>
+<li><strong>Fisher 情報行列</strong>：$F = -\mathbb{E}\left[ \nabla^2 \log p(\mathbf{x} \mid \boldsymbol{\theta}) \right]$。対数尤度の Hessian の期待値の符号反転。</li>
+<li><strong>Gauss–Newton 近似</strong>：最小二乗で Hessian を $J^\top J$ で近似。$J^\top J$ は必ず positive semidefinite。</li>
+</ul>
+</section>
+
+<!-- 6 -->
+<section id="geometry">
+<h2>6. 微分幾何学への入口</h2>
+<p>微分幾何学は、ここまでの道具（Jacobian・正定値行列・Hessian・div/curl）を<strong>曲がった空間</strong>に持ち込む分野。新しい概念の多くは、実はこれまでの話の言い換えになっている。</p>
+
+<h3>6.1 多様体と接空間<span class="en">manifold / tangent space</span></h3>
+<p><strong>多様体</strong> $M$ は「局所的には $\mathbb{R}^n$ に見える空間」。球面、トーラス、CG のなめらかなメッシュ表面などがそう。各点 $p$ でその点に接する平面（ベクトル空間）を<strong>接空間</strong> $T_p M$ と呼ぶ。速度ベクトルや gradient はここに住んでいる。</p>
+<div class="card">
+<p><strong>例：直交行列の集合も多様体。</strong>$SO(n) = \{ Q \mid Q^\top Q = I,\ \det Q = 1 \}$（回転行列全体）。単位行列 $I$ を通る曲線 $Q(t)$ を考えて $Q(t)^\top Q(t) = I$ を微分すると</p>
+$$
+\dot{Q}^\top Q + Q^\top \dot{Q} = 0
+\;\xrightarrow{\;t = 0,\ Q = I\;}\;
+\Omega^\top + \Omega = 0
+$$
+<p>なので、$I$ での接空間は<strong>反対称行列</strong> $\Omega$ 全体。2次元なら $\Omega = \begin{bmatrix} 0 & -\omega \\ \omega & 0 \end{bmatrix}$ で、これは角速度そのもの。§5 の「Jacobian の反対称部分 = 回転」とも同じ構造。この接空間が §7 の <strong>Lie 代数</strong> $\mathfrak{so}(n)$。</p>
+</div>
+
+<h3>6.2 計量テンソル<span class="en">metric tensor</span></h3>
+<p>曲がった空間（や曲がった座標）で、長さ・角度・面積を測るための <strong>positive definite な対称行列</strong> $g_{ij}$。微小な長さは</p>
+$$
+ds^2 = g_{ij} \, dx^i \, dx^j
+$$
+<div class="note"><strong>アインシュタインの縮約記法：</strong>上と下に同じ添字が出てきたら、その添字について和をとる約束。$g_{ij} dx^i dx^j = \sum_{i,j} g_{ij} dx^i dx^j$。微分幾何学や一般相対論の論文はほぼこれで書かれている。</div>
+
+<p><strong>計量は Jacobian から作れる。</strong>パラメータ $\mathbf{q}$ から空間への写像 $\mathbf{x}(\mathbf{q})$ の Jacobian を $J$ とすると、</p>
+$$
+g = J^\top J
+$$
+<p>$J$ が列フルランクなら $g$ は positive definite（§5 の Gauss–Newton と同じ形）。</p>
+
+<div class="card">
+<p><strong>例1：極座標。</strong>$(r, \theta) \mapsto (r\cos\theta,\ r\sin\theta)$ の Jacobian は</p>
+$$
+J = \begin{bmatrix} \cos\theta & -r\sin\theta \\ \sin\theta & r\cos\theta \end{bmatrix},
+\qquad
+g = J^\top J = \begin{bmatrix} 1 & 0 \\ 0 & r^2 \end{bmatrix},
+\qquad
+ds^2 = dr^2 + r^2 \, d\theta^2
+$$
+<p>同じ $d\theta$ でも、外側ほど $r$ 倍長く進む、ということが $g_{\theta\theta} = r^2$ に表れている。</p>
+<p><strong>例2：半径 $R$ の球面</strong>（$\theta$ は北極からの角度、$\varphi$ は経度）</p>
+$$
+ds^2 = R^2 \, d\theta^2 + R^2 \sin^2\theta \, d\varphi^2
+$$
+<p>極に近づく（$\sin\theta \to 0$）と経度方向の長さが縮む。世界地図で高緯度が引き伸ばされるのはこのため。</p>
+</div>
+
+<h3>6.3 曲面の曲率<span class="en">curvature of surfaces</span></h3>
+<p>3次元空間の曲面 $\mathbf{x}(u, v)$ には2つの「基本形式」がある。</p>
+<ul>
+<li><strong>第一基本形式</strong>（first fundamental form）$\mathrm{I} = E\,du^2 + 2F\,du\,dv + G\,dv^2$：曲面上の計量そのもの。行列で書けば $\begin{bmatrix} E & F \\ F & G \end{bmatrix} = J^\top J$。</li>
+<li><strong>第二基本形式</strong>（second fundamental form）$\mathrm{II} = L\,du^2 + 2M\,du\,dv + N\,dv^2$：曲面が法線方向にどれだけ曲がっているか。$L = \mathbf{x}_{uu} \cdot \mathbf{n}$ などで、<strong>法線方向の Hessian</strong> にあたる。</li>
+</ul>
+<p>この2つから<strong>形作用素</strong>（shape operator）$S = \mathrm{I}^{-1} \mathrm{II}$ を作り、その固有値が<strong>主曲率</strong> $\kappa_1, \kappa_2$（一番曲がる方向と一番曲がらない方向の曲率）。</p>
+$$
+K = \kappa_1 \kappa_2 = \frac{\det \mathrm{II}}{\det \mathrm{I}} = \frac{LN - M^2}{EG - F^2}
+\quad (\text{ガウス曲率}),
+\qquad
+H_{\text{mean}} = \frac{\kappa_1 + \kappa_2}{2}
+\quad (\text{平均曲率})
+$$
+<p>（平均曲率は普通 $H$ と書くが、Hessian と紛らわしいのでここでは $H_{\text{mean}}$ とした。）</p>
+
+<div class="note">
+<p><strong>§2 の definite の話とそのまま対応する。</strong>曲面を $z = f(x, y)$ のグラフで書き、$\nabla f = \mathbf{0}$ の点を見ると、$\mathrm{I} = I$（単位行列）、$\mathrm{II} = $ Hessian になるので $K = \det(\text{Hessian})$。</p>
+</div>
+<div class="table-wrap">
+<table>
+<tr><th>曲面</th><th>主曲率</th><th>ガウス曲率 $K$</th><th>形作用素</th></tr>
+<tr><td>半径 $R$ の球面</td><td>$\tfrac{1}{R}, \tfrac{1}{R}$</td><td>$\tfrac{1}{R^2} > 0$</td><td>definite（お椀）</td></tr>
+<tr><td>半径 $R$ の円柱</td><td>$\tfrac{1}{R}, 0$</td><td>$0$</td><td>semidefinite（溝）</td></tr>
+<tr><td>平面</td><td>$0, 0$</td><td>$0$</td><td>ゼロ</td></tr>
+<tr><td>鞍面 $z = x^2 - y^2$（原点）</td><td>$2, -2$</td><td>$-4 < 0$</td><td>indefinite（鞍）</td></tr>
+</table>
+</div>
+
+<h3>6.4 驚異の定理<span class="en">Theorema Egregium</span></h3>
+<p>ガウス曲率 $K$ は第二基本形式を使って定義したのに、実は<strong>計量 $g$（第一基本形式）だけから計算できる</strong>（Gauss）。つまり曲面の上に住んでいる「2次元の生き物」が、外の3次元空間を知らなくても、長さを測るだけで $K$ がわかる。この「中から測れる性質」を<strong>内在的</strong>（intrinsic）と呼ぶ。</p>
+<div class="card">
+<p><strong>身近な帰結：</strong></p>
+<ul>
+<li>球面（$K > 0$）は平面（$K = 0$）に、長さを保ったまま広げられない → 歪みのない世界地図は作れない。</li>
+<li>ピザの一切れを横方向に丸める（円柱にする）と、$K = 0$ を保つために縦方向には曲がれなくなる → 先端が垂れない。</li>
+</ul>
+</div>
+
+<h3>6.5 クリストッフェル記号と測地線<span class="en">Christoffel symbols / geodesics</span></h3>
+<p>曲がった座標では、基底ベクトル自体が場所によって向きを変える。その変化分を表すのが<strong>クリストッフェル記号</strong>で、計量の微分から作れる。</p>
+$$
+\Gamma^k_{ij} = \frac{1}{2} g^{kl} \left( \partial_i g_{jl} + \partial_j g_{il} - \partial_l g_{ij} \right)
+$$
+<p>（$g^{kl}$ は $g_{kl}$ の逆行列の成分。）これを使うと<strong>測地線</strong>（その空間での「まっすぐな線」＝局所的に最短な道）の方程式が書ける。</p>
+$$
+\ddot{x}^k + \Gamma^k_{ij} \, \dot{x}^i \dot{x}^j = 0
+$$
+<div class="card">
+<p><strong>例：極座標。</strong>$g = \operatorname{diag}(1, r^2)$ から $\Gamma^r_{\theta\theta} = -r$、$\Gamma^\theta_{r\theta} = \Gamma^\theta_{\theta r} = \tfrac{1}{r}$（他はゼロ）。測地線の方程式は</p>
+$$
+\ddot{r} - r \dot{\theta}^2 = 0,
+\qquad
+\ddot{\theta} + \frac{2}{r} \dot{r} \dot{\theta} = 0
+$$
+<p>平面上のただの直線を極座標で書いただけなのに、遠心力（$r\dot{\theta}^2$）やコリオリ力（$2\dot{r}\dot{\theta}$）のような項が出てくる。これらの「見かけの力」の正体がクリストッフェル記号。球面上なら測地線は大円になる（飛行機の航路）。回転の集合 $SO(3)$ 上の測地線が四元数の slerp（§7.5）。</p>
+</div>
+<p>クリストッフェル記号を使ってベクトル場を正しく微分する操作を<strong>共変微分</strong>（covariant derivative）$\nabla_X Y$ と呼ぶ。$\nabla$ がここでも出てくるが、意味は「曲がった空間版の微分」。</p>
+
+<h3>6.6 曲がった空間のラプラシアン<span class="en">Laplace–Beltrami operator</span></h3>
+<p>§5 のラプラシアンを計量付きの空間に一般化したもの。</p>
+$$
+\Delta f = \frac{1}{\sqrt{|g|}} \, \partial_i \!\left( \sqrt{|g|} \, g^{ij} \, \partial_j f \right)
+$$
+<div class="card">
+<p><strong>例：極座標。</strong>$|g| = \det g = r^2$、$g^{rr} = 1$、$g^{\theta\theta} = 1/r^2$ を入れると、よく知られた式になる。</p>
+$$
+\Delta f = \frac{1}{r} \frac{\partial}{\partial r}\!\left( r \frac{\partial f}{\partial r} \right) + \frac{1}{r^2} \frac{\partial^2 f}{\partial \theta^2}
+$$
+<p>CFD で円筒座標の式が複雑になるのは、計量が単位行列でないから。</p>
+</div>
+<p>CG では三角形メッシュ上の離散版（<strong>cotangent Laplacian</strong>）がメッシュの平滑化・パラメータ化・変形などで定番。この方向は「離散微分幾何学」（discrete differential geometry）と呼ばれ、Keenan Crane の講義ノート <em>Discrete Differential Geometry: An Applied Introduction</em> が CG 寄りの入門として有名。</p>
+
+<h3>6.7 微分形式と外微分<span class="en">differential forms / exterior derivative</span></h3>
+<p>grad・curl・div は、実は<strong>外微分</strong> $d$ という一つの操作の別の顔。$k$ 次の微分形式（$k$-form）に $d$ をかけると $(k+1)$ 次になる。3次元では</p>
+$$
+\underbrace{f}_{\text{0-form}}
+\;\xrightarrow{\;d\;=\;\text{grad}\;}\;
+\underbrace{\omega}_{\text{1-form}}
+\;\xrightarrow{\;d\;=\;\text{curl}\;}\;
+\underbrace{\eta}_{\text{2-form}}
+\;\xrightarrow{\;d\;=\;\text{div}\;}\;
+\underbrace{\rho}_{\text{3-form}}
+$$
+<p>そして常に $d \circ d = 0$。これが §5 の $\nabla \times \nabla f = \mathbf{0}$ と $\nabla \cdot (\nabla \times \mathbf{u}) = 0$ の正体。微分形式どうしの積は<strong>ウェッジ積</strong> $dx \wedge dy$ で、$dx \wedge dy = -dy \wedge dx$（向き付きの面積要素）。</p>
+
+<p><strong>一般化されたストークスの定理：</strong></p>
+$$
+\int_M d\omega = \int_{\partial M} \omega
+$$
+<p>「領域の中での微分の合計 = 境界での値の合計」。これ一つが、次の定理をすべて含んでいる。</p>
+<div class="table-wrap">
+<table>
+<tr><th>$\omega$ の次数</th><th>定理</th><th>式</th></tr>
+<tr><td>0-form</td><td>微積分の基本定理</td><td>$\int_a^b f'(x)\,dx = f(b) - f(a)$</td></tr>
+<tr><td>1-form（平面）</td><td>グリーンの定理</td><td>$\iint_D \operatorname{curl}\mathbf{u}\,dA = \oint_{\partial D} \mathbf{u} \cdot d\mathbf{l}$</td></tr>
+<tr><td>1-form（空間）</td><td>ストークスの定理</td><td>$\iint_S (\nabla \times \mathbf{u}) \cdot d\mathbf{S} = \oint_{\partial S} \mathbf{u} \cdot d\mathbf{l}$</td></tr>
+<tr><td>2-form</td><td>ガウスの発散定理</td><td>$\iiint_V \nabla \cdot \mathbf{u}\,dV = \oiint_{\partial V} \mathbf{u} \cdot d\mathbf{S}$</td></tr>
+</table>
+</div>
+<div class="note">§5 のウィジェットの水車は、まさにグリーンの定理のイメージ。小さな円に沿って流れを足し合わせた量（循環）を面積で割ると curl になる。同様に、小さな円から出ていく流量を面積で割ると div になる。有限体積法（FVM）はこの「境界の流束で中身を数える」発想そのもの。</div>
+
+<h3>6.8 曲率テンソル<span class="en">Riemann curvature tensor</span></h3>
+<p>3次元以上の空間では、曲がり具合は1つの数 $K$ では表せず、<strong>リーマン曲率テンソル</strong> $R^i{}_{jkl}$ で表す。「ベクトルを小さなループに沿って平行移動して戻ってくると、どれだけ向きがずれるか」を測る量。2次元ではガウス曲率 $K$ だけで情報が尽きる。一般相対論の重力はこの曲率で記述される。</p>
+
+<h3>学ぶ順番の目安</h3>
+<ol>
+<li>曲線の曲率・曲面の第一/第二基本形式（3次元空間の中の曲面として、具体的に計算できる）</li>
+<li>ガウス曲率と驚異の定理（内在的な見方へ）</li>
+<li>多様体・接空間・計量・測地線（外の空間を使わない一般論）</li>
+<li>微分形式・ストークスの定理・リーマン曲率</li>
+</ol>
+</section>
+
+<!-- 7 -->
+<section id="lie">
+<h2>7. Lie 群・Lie 代数：回転と姿勢の数学</h2>
+<p>ロボットの姿勢（回転・位置）は、ベクトル空間ではなく<strong>曲がった空間</strong>に住んでいる。§6 の多様体に「掛け算」が加わったものが <strong>Lie 群</strong>で、manif・Sophus・GTSAM などのライブラリはこの上で状態推定をする。この章は Solà らの <em>A micro Lie theory for state estimation in robotics</em>（arXiv:1812.01537、<a href="https://github.com/artivis/manif">manif</a> の設計書）の流儀に合わせてある。</p>
+<div class="warn"><strong>Lie</strong> はノルウェーの数学者 Sophus Lie の名前で、英語の発音は「リー」（<q>lee</q>）。「ライ」ではない。</div>
+
+<h3>7.1 なぜ回転はベクトルのように足せないか</h3>
+<p>3次元の回転行列 $R$ は 9 個の数を持つが、自由度は 3。制約を満たす行列の集合が</p>
+$$
+SO(3) = \{ R \in \mathbb{R}^{3 \times 3} \mid R^\top R = I,\ \det R = 1 \}
+$$
+<p>で、§1 の直交行列のうち鏡映を除いたもの。2つの回転を<strong>足しても</strong>回転にならない（$R_1 + R_2$ は直交行列でない）が、<strong>掛ければ</strong>回転になる（$R_1 R_2 \in SO(3)$）。つまり $SO(3)$ は「なめらかな多様体」であると同時に「群」。これが Lie 群。</p>
+<div class="table-wrap"><table>
+<tr><th>群</th><th>意味</th><th>自由度</th><th>Lie 代数の要素（接ベクトル）</th></tr>
+<tr><td>$SO(2)$</td><td>平面の回転</td><td>1</td><td>$\theta$</td></tr>
+<tr><td>$SE(2)$</td><td>平面の剛体運動（回転＋並進）</td><td>3</td><td>$(\rho_x, \rho_y, \theta)$</td></tr>
+<tr><td>$SO(3)$</td><td>3次元の回転</td><td>3</td><td>$\boldsymbol{\omega} \in \mathbb{R}^3$（回転ベクトル）</td></tr>
+<tr><td>$SE(3)$</td><td>3次元の剛体運動（ロボットの姿勢）</td><td>6</td><td>$(\boldsymbol{\rho}, \boldsymbol{\omega}) \in \mathbb{R}^6$（twist）</td></tr>
+<tr><td>$SE_2(3)$</td><td>姿勢＋速度（IMU の状態）</td><td>9</td><td>$(\boldsymbol{\rho}, \boldsymbol{\nu}, \boldsymbol{\omega})$</td></tr>
+<tr><td>$S^3$（単位四元数）</td><td>3次元の回転（$SO(3)$ の二重被覆）</td><td>3</td><td>$\boldsymbol{\omega} \in \mathbb{R}^3$</td></tr>
+</table></div>
+<p>manif が扱うのはこれらと $\mathbb{R}^n$、$SGal(3)$、それらの束（Bundle）。</p>
+
+<h3>7.2 Lie 代数 = 単位元での接空間</h3>
+<p>§6.1 で計算したとおり、$SO(3)$ の単位元 $I$ での接空間は反対称行列の集合。これを <strong>Lie 代数</strong> $\mathfrak{so}(3)$ と呼ぶ。反対称行列は 3 つの数で決まるので、ベクトル $\boldsymbol{\omega} \in \mathbb{R}^3$ と行き来できる。</p>
+$$
+\boldsymbol{\omega}^\wedge = [\boldsymbol{\omega}]_\times =
+\begin{bmatrix} 0 & -\omega_z & \omega_y \\ \omega_z & 0 & -\omega_x \\ -\omega_y & \omega_x & 0 \end{bmatrix},
+\qquad
+[\boldsymbol{\omega}]_\times \mathbf{v} = \boldsymbol{\omega} \times \mathbf{v}
+$$
+<p>$\wedge$（hat）でベクトル → 行列、$\vee$（vee）で行列 → ベクトル。$[\boldsymbol{\omega}]_\times$ を掛けることが外積になっているので、$\boldsymbol{\omega}$ は物理的には<strong>角速度</strong>そのもの。回転行列の時間変化は</p>
+$$
+\dot{R} = R \, [\boldsymbol{\omega}]_\times
+\qquad (\boldsymbol{\omega} \text{ は機体座標系で見た角速度})
+$$
+<p>で、ジャイロの読み値を積分して姿勢を更新するときの基本式。</p>
+<div class="note">接空間は<strong>ベクトル空間</strong>なので、足し算・スケール・平均・共分散がふつうに使える。「群の上では掛け算、接空間ではベクトル演算」と使い分けるのが Lie 理論の基本戦略。</div>
+
+<h3>7.3 exp と log：接空間と群を行き来する</h3>
+<p>角速度 $\boldsymbol{\omega}$ で単位時間だけ回ったときの回転が<strong>指数写像</strong> $\exp$。$\boldsymbol{\omega} = \theta \mathbf{u}$（$\mathbf{u}$ は単位ベクトル）と書くと、行列指数が閉じた形になる（<strong>Rodrigues の公式</strong>）。</p>
+$$
+R = \exp([\boldsymbol{\omega}]_\times) = I + \sin\theta \, [\mathbf{u}]_\times + (1 - \cos\theta) \, [\mathbf{u}]_\times^2
+$$
+<p>逆向きの $\log$ は、回転行列から回転ベクトルを取り出す。</p>
+$$
+\theta = \arccos\!\left( \frac{\operatorname{tr} R - 1}{2} \right),
+\qquad
+[\mathbf{u}]_\times = \frac{R - R^\top}{2 \sin\theta}
+$$
+<p>$SE(3)$ でも同じ構造で、twist $(\boldsymbol{\rho}, \boldsymbol{\omega})$ の $\exp$ は「一定の角速度と並進速度で動いた結果」＝<strong>ネジ運動</strong>（screw motion）になる。</p>
+<div class="card">
+<p><strong>単位四元数との関係：</strong></p>
+$$
+\mathbf{q} = \exp\!\left( \tfrac{1}{2} \boldsymbol{\omega} \right) = \left( \cos\tfrac{\theta}{2},\ \mathbf{u} \sin\tfrac{\theta}{2} \right)
+$$
+<p>四元数は $S^3$（4次元の単位球面）という Lie 群の要素で、Lie 代数は $SO(3)$ と同じ $\mathbb{R}^3$。$\tfrac{1}{2}$ が付くのは、$S^3$ が $SO(3)$ を2重に覆っている（$\mathbf{q}$ と $-\mathbf{q}$ が同じ回転）ため。</p>
+</div>
+
+<h3>7.4 ⊕ と ⊖：多様体上の「足し算・引き算」</h3>
+<p>群の要素 $X$ に接ベクトル $\boldsymbol{\tau}$ を「足す」、2つの要素の「差」を接ベクトルとして取り出す。これが manif の <code>plus</code> / <code>minus</code>。</p>
+$$
+X \oplus \boldsymbol{\tau} = X \exp(\boldsymbol{\tau}^\wedge),
+\qquad
+Y \ominus X = \log(X^{-1} Y)^\vee
+$$
+<p>これは<strong>右</strong>版で、$\boldsymbol{\tau}$ は $X$ の<strong>機体座標系</strong>で見た摂動。<strong>左</strong>版 $\boldsymbol{\tau} \oplus X = \exp(\boldsymbol{\tau}^\wedge) X$ は世界座標系の摂動（manif では <code>lplus</code> / <code>lminus</code>）。どちらを使うかで Jacobian も共分散も変わるので、ライブラリの流儀を最初に確認する。</p>
+<div class="table-wrap"><table>
+<tr><th>概念</th><th>記号</th><th>manif</th></tr>
+<tr><td>合成</td><td>$X \circ Y$</td><td><code>X * Y</code></td></tr>
+<tr><td>逆元</td><td>$X^{-1}$</td><td><code>X.inverse()</code></td></tr>
+<tr><td>hat / exp</td><td>$\boldsymbol{\tau}^\wedge$ / $\exp(\boldsymbol{\tau}^\wedge)$</td><td><code>tau.hat()</code> / <code>tau.exp()</code></td></tr>
+<tr><td>log（+ vee）</td><td>$\log(X)^\vee$</td><td><code>X.log()</code></td></tr>
+<tr><td>右 plus</td><td>$X \oplus \boldsymbol{\tau}$</td><td><code>X + tau</code>, <code>X.plus(tau)</code></td></tr>
+<tr><td>右 minus</td><td>$Y \ominus X$</td><td><code>Y - X</code>, <code>Y.minus(X)</code></td></tr>
+<tr><td>点に作用</td><td>$X \cdot \mathbf{p}$</td><td><code>X.act(p)</code></td></tr>
+<tr><td>随伴</td><td>$\mathrm{Ad}_X$</td><td><code>X.adj()</code></td></tr>
+</table></div>
+
+<h3>7.5 補間：slerp は Lie 群上の測地線</h3>
+<p>姿勢 $A$ から $B$ へなめらかに動かしたい。接空間での差 $\boldsymbol{\tau} = B \ominus A$ を $t$ 倍して戻せばよい。</p>
+$$
+X(t) = A \oplus t \,(B \ominus A) = A \exp\!\big( t \log(A^{-1} B) \big),
+\qquad t \in [0, 1]
+$$
+<p>$SO(3)$ でこれを四元数で書いたものが <strong>slerp</strong>（spherical linear interpolation）。角速度一定で、最短の回転軸まわりに回る。§6.5 の言葉でいうと、$SO(3)$ の自然な（両側不変な）計量に関する<strong>測地線</strong>。</p>
+<p>$SE(3)$ では「回転と並進を別々に補間する」のと「$\mathfrak{se}(3)$ で補間する」は<strong>別の軌道</strong>になる。後者は一定の twist によるネジ運動で、途中の位置が円弧を描く。下のウィジェットは $SE(2)$ でその違いを見るもの。</p>
+
+<div class="widget" id="se2">
+  <p class="widget-title">触ってみる：$SE(2)$ の補間 — 座標ごとの線形補間 vs Lie 群上の補間</p>
+  <div class="canvas-box"><canvas id="se2-canvas"></canvas></div>
+  <div class="slider" style="margin-top:10px"><span>$t$</span><input type="range" id="se2-t" min="0" max="1" step="0.01" value="0.5"><span id="se2-t-v"></span></div>
+  <div class="slider"><span>$\theta_B$</span><input type="range" id="se2-th" min="-180" max="180" step="1" value="150"><span id="se2-th-v"></span></div>
+  <div class="readout">
+    <div class="vals"><span id="se2-tau"></span></div>
+    <p class="hint"><span style="color:var(--neg)">■</span> 青の点線：$(x, y, \theta)$ をそれぞれ線形補間。<span style="color:var(--pos)">■</span> オレンジ：$X(t) = A \oplus t\,(B \ominus A)$。一定の速度・角速度で動くので、軌道は円弧になる。キャンバスをクリック／ドラッグするとポーズ $B$ が動きます。</p>
+  </div>
+</div>
+
+<p>オイラー角を線形補間するとジンバルロックや不自然な軌道が出るのに対して、Lie 群上の補間にはそれがない。CG のアニメーションやロボットの軌道生成で「四元数 slerp を使え」と言われる理由がこれ。</p>
+
+<h3>7.6 多様体上の Jacobian と最適化</h3>
+<p>§3 の Jacobian を Lie 群の間の関数 $f: \mathcal{M} \to \mathcal{N}$ に拡張するには、入力の摂動と出力の差を接空間で測ればよい。</p>
+$$
+\frac{D f(X)}{D X} = \lim_{\boldsymbol{\tau} \to \mathbf{0}} \frac{ f(X \oplus \boldsymbol{\tau}) \ominus f(X) }{\boldsymbol{\tau}}
+$$
+<p>$3 \times 3$ の回転行列の成分で微分すると $9$ 列になってしまうが、この定義なら $SO(3)$ は $3$ 列、$SE(3)$ は $6$ 列と、自由度どおりの小さな行列になる。manif は <code>X.plus(tau, J_out_X, J_out_tau)</code> のように、各演算が解析的な Jacobian を同時に返す。</p>
+<div class="card">
+<p><strong>よく出る Jacobian：</strong>$SO(3)$ の<strong>右 Jacobian</strong> $J_r(\boldsymbol{\omega})$ は、$\exp$ の入力の微小変化と、出力の接空間での変化をつなぐ。</p>
+$$
+\exp\big((\boldsymbol{\omega} + \delta\boldsymbol{\omega})^\wedge\big) \approx \exp(\boldsymbol{\omega}^\wedge) \exp\big((J_r(\boldsymbol{\omega}) \, \delta\boldsymbol{\omega})^\wedge\big)
+$$
+$$
+J_r(\boldsymbol{\omega}) = I - \frac{1 - \cos\theta}{\theta^2} [\boldsymbol{\omega}]_\times + \frac{\theta - \sin\theta}{\theta^3} [\boldsymbol{\omega}]_\times^2
+$$
+<p>$\theta \to 0$ で $J_r \to I$。IMU の事前積分（preintegration）や EKF の誤差状態の伝播で頻出。</p>
+</div>
+<p><strong>最適化：</strong>§5 の Gauss–Newton を Lie 群上で回すには、状態の更新を $X \leftarrow X \oplus \boldsymbol{\delta}$ にし、Jacobian を上の定義で取る。残差 $\mathbf{r}(X)$ に対して</p>
+$$
+(J^\top J) \, \boldsymbol{\delta} = -J^\top \mathbf{r},
+\qquad X \leftarrow X \oplus \boldsymbol{\delta}
+$$
+<p>を繰り返す。$J^\top J$ はやはり positive semidefinite（§1・§5）。Ceres の <code>Manifold</code>、GTSAM、g2o はこれを実装している。SLAM・バンドル調整・ハンドアイキャリブレーションはほぼこの形。</p>
+<p><strong>不確かさ：</strong>共分散も接空間で定義する。$X = \bar{X} \oplus \boldsymbol{\tau},\ \boldsymbol{\tau} \sim \mathcal{N}(\mathbf{0}, \Sigma)$ とすれば $\Sigma$ は $SE(3)$ なら $6 \times 6$ の positive definite 行列。§2 のマハラノビス距離 $\boldsymbol{\tau}^\top \Sigma^{-1} \boldsymbol{\tau}$ がそのまま使える。</p>
+
+<h3>7.7 随伴（adjoint）：接ベクトルの座標系を変える</h3>
+<p>右側の摂動を左側に持っていく線形変換。</p>
+$$
+X \exp(\boldsymbol{\tau}^\wedge) = \exp\big( (\mathrm{Ad}_X \boldsymbol{\tau})^\wedge \big) X
+$$
+$$
+\mathrm{Ad}_R = R \quad (SO(3)),
+\qquad
+\mathrm{Ad}_{(R, \mathbf{t})} = \begin{bmatrix} R & [\mathbf{t}]_\times R \\ \mathbf{0} & R \end{bmatrix} \quad (SE(3),\ \boldsymbol{\tau} = (\boldsymbol{\rho}, \boldsymbol{\omega}))
+$$
+<p>機体座標系の速度（twist）を世界座標系に変換する行列でもあり、右 Jacobian と左 Jacobian は $J_l = \mathrm{Ad}_{\exp(\boldsymbol{\tau}^\wedge)} J_r$ でつながる。</p>
+
+<h3>読む順番の目安</h3>
+<ol>
+<li>Solà, Deray, Atchuthan, <em>A micro Lie theory for state estimation in robotics</em>（arXiv:1812.01537）。manif の設計書で、まずこれ。</li>
+<li>manif の Python バインディングで $SE(2)$・$SE(3)$ の <code>plus</code> / <code>minus</code> / Jacobian を触ってみる。</li>
+<li>Barfoot, <em>State Estimation for Robotics</em>：Lie 群上の推定を体系的に。</li>
+<li>Lynch &amp; Park, <em>Modern Robotics</em>：twist・screw・$\exp$ を運動学の側から。</li>
+</ol>
+</section>
+
+<!-- 8 -->
+<section id="reading">
+<h2>8. 英語での読み方</h2>
+
+<h3>ベクトル解析</h3>
+<div class="table-wrap">
+<table>
+<tr><th>記号</th><th>英語</th><th>日本語</th></tr>
+<tr><td class="sym">$\nabla$</td><td><q>del</q> / <q>nabla</q></td><td>ナブラ</td></tr>
+<tr><td class="sym">$\nabla f$</td><td><q>grad f</q> / <q>del f</q> / <q>gradient of f</q></td><td>グラディエント f</td></tr>
+<tr><td class="sym">$\nabla \cdot \mathbf{u}$</td><td><q>div u</q> / <q>del dot u</q> / <q>divergence of u</q></td><td>ダイバージェンス u</td></tr>
+<tr><td class="sym">$\nabla \times \mathbf{u}$</td><td><q>curl u</q> / <q>del cross u</q></td><td>ローテーション u、カール u</td></tr>
+<tr><td class="sym">$\nabla^2 f$</td><td><q>del squared f</q> / <q>Laplacian of f</q></td><td>ラプラシアン f</td></tr>
+<tr><td class="sym">$\Delta f$</td><td><q>Laplacian of f</q></td><td>ラプラシアン f</td></tr>
+</table>
+</div>
+<p>英語圏では <q>del</q> が一番よく使われる。<q>div</q>・<q>grad</q>・<q>curl</q> は略称のまま口にすることが多い。</p>
+
+<h3>微分</h3>
+<div class="table-wrap">
+<table>
+<tr><th>記号</th><th>英語</th></tr>
+<tr><td class="sym">$\dfrac{df}{dx}$</td><td><q>dee f dee x</q> / <q>df dx</q></td></tr>
+<tr><td class="sym">$\dfrac{\partial f}{\partial x}$</td><td><q>partial f partial x</q> / <q>partial of f with respect to x</q> / <q>del f del x</q></td></tr>
+<tr><td class="sym">$\dfrac{\partial^2 f}{\partial x^2}$</td><td><q>partial squared f partial x squared</q> / <q>second partial of f with respect to x</q></td></tr>
+<tr><td class="sym">$\dfrac{\partial^2 f}{\partial x \partial y}$</td><td><q>partial squared f partial x partial y</q></td></tr>
+<tr><td class="sym">$\dot{x},\ \ddot{x}$</td><td><q>x dot</q>, <q>x double dot</q>（時間微分）</td></tr>
+</table>
+</div>
+<div class="warn">$\partial$ は英語では <q>partial</q>（または <q>del</q>）。日本でよく聞く「ラウンド」は英語圏ではまず通じない。</div>
+
+<h3>線形代数・その他</h3>
+<div class="table-wrap">
+<table>
+<tr><th>記号</th><th>英語</th></tr>
+<tr><td class="sym">$H_{ij}$</td><td><q>H i j</q> / <q>H sub i j</q></td></tr>
+<tr><td class="sym">$\mathbf{x}^\top A \mathbf{x}$</td><td><q>x transpose A x</q></td></tr>
+<tr><td class="sym">$A^{-1}$</td><td><q>A inverse</q></td></tr>
+<tr><td class="sym">$\operatorname{tr}(H)$</td><td><q>trace of H</q></td></tr>
+<tr><td class="sym">$\det H$</td><td><q>det H</q> / <q>determinant of H</q></td></tr>
+<tr><td class="sym">$\lVert \mathbf{x} \rVert$</td><td><q>norm of x</q></td></tr>
+<tr><td class="sym">$\mathbb{R}^n$</td><td><q>R n</q> / <q>R to the n</q></td></tr>
+<tr><td class="sym">$\mathbf{x} \in \mathbb{R}^n$</td><td><q>x in R n</q></td></tr>
+<tr><td class="sym">$\hat{x},\ \bar{x},\ \tilde{x}$</td><td><q>x hat</q>, <q>x bar</q>, <q>x tilde</q></td></tr>
+<tr><td class="sym">$\Delta x$</td><td><q>delta x</q></td></tr>
+<tr><td class="sym">$\approx$</td><td><q>is approximately</q></td></tr>
+</table>
+</div>
+<div class="note">例：$\nabla \cdot \mathbf{u} = 0$ は <q>div u equals zero</q> / <q>del dot u equals zero</q>。</div>
+
+<h3>微分幾何学</h3>
+<div class="table-wrap">
+<table>
+<tr><th>記号</th><th>英語</th></tr>
+<tr><td class="sym">$T_p M$</td><td><q>T p M</q> / <q>the tangent space of M at p</q></td></tr>
+<tr><td class="sym">$g_{ij}$</td><td><q>g i j</q> / <q>g sub i j</q> / <q>the metric</q></td></tr>
+<tr><td class="sym">$g^{ij}$</td><td><q>g upper i j</q> / <q>g super i j</q> / <q>the inverse metric</q></td></tr>
+<tr><td class="sym">$dx^i$</td><td><q>d x i</q> / <q>d x upper i</q>（上付きは累乗ではなく添字）</td></tr>
+<tr><td class="sym">$\Gamma^k_{ij}$</td><td><q>Gamma k i j</q> / <q>the Christoffel symbols</q></td></tr>
+<tr><td class="sym">$\nabla_X Y$</td><td><q>nabla X of Y</q> / <q>the covariant derivative of Y along X</q></td></tr>
+<tr><td class="sym">$R^i{}_{jkl}$</td><td><q>R i j k l</q> / <q>the Riemann tensor</q></td></tr>
+<tr><td class="sym">$dx \wedge dy$</td><td><q>dx wedge dy</q></td></tr>
+<tr><td class="sym">$\partial M$</td><td><q>the boundary of M</q> / <q>partial M</q></td></tr>
+<tr><td class="sym">$\oint$</td><td><q>contour integral</q> / <q>closed line integral</q></td></tr>
+<tr><td class="sym">$\iint,\ \iiint$</td><td><q>double integral</q>, <q>triple integral</q></td></tr>
+<tr><td class="sym">$\kappa_1, \kappa_2$</td><td><q>kappa one, kappa two</q> / <q>the principal curvatures</q></td></tr>
+</table>
+</div>
+
+<h3>Lie 群・ロボティクス</h3>
+<div class="table-wrap">
+<table>
+<tr><th>記号</th><th>英語</th></tr>
+<tr><td class="sym">Lie group</td><td><q>lee group</q>（「ライ」ではない）</td></tr>
+<tr><td class="sym">$SO(3)$</td><td><q>S O three</q> / <q>the special orthogonal group</q></td></tr>
+<tr><td class="sym">$\mathfrak{so}(3)$</td><td><q>little s o three</q> / <q>the Lie algebra of S O three</q>（フラクトゥール書体）</td></tr>
+<tr><td class="sym">$SE(3)$, $\mathfrak{se}(3)$</td><td><q>S E three</q>, <q>little s e three</q> / <q>the special Euclidean group</q></td></tr>
+<tr><td class="sym">$S^3$</td><td><q>S three</q> / <q>the three-sphere</q></td></tr>
+<tr><td class="sym">$\boldsymbol{\omega}^\wedge$, $[\boldsymbol{\omega}]_\times$</td><td><q>omega hat</q> / <q>omega wedge</q> / <q>skew of omega</q> / <q>omega cross</q></td></tr>
+<tr><td class="sym">$(\cdot)^\vee$</td><td><q>vee</q></td></tr>
+<tr><td class="sym">$\exp$, $\log$</td><td><q>exp</q> / <q>the exponential map</q>, <q>log</q> / <q>the log map</q></td></tr>
+<tr><td class="sym">$\oplus$, $\ominus$</td><td><q>plus</q> / <q>o-plus</q> / <q>box-plus</q>, <q>minus</q> / <q>o-minus</q></td></tr>
+<tr><td class="sym">$\mathrm{Ad}_X$</td><td><q>the adjoint of X</q> / <q>big adjoint</q>（$\mathrm{ad}$ は <q>little adjoint</q>）</td></tr>
+<tr><td class="sym">$J_r$, $J_l$</td><td><q>the right Jacobian</q>, <q>the left Jacobian</q></td></tr>
+<tr><td class="sym">slerp</td><td><q>slurp</q></td></tr>
+<tr><td class="sym">twist / wrench</td><td><q>twist</q>（速度）, <q>wrench</q>（力とトルク）</td></tr>
+</table>
+</div>
+
+<h3>ギリシャ文字</h3>
+<p>日本語の慣用読みと英語の発音がずれるものが多いので注意。</p>
+<div class="table-wrap">
+<table>
+<tr><th>文字</th><th>英語での発音</th><th>日本でよく聞く読み</th></tr>
+<tr><td class="sym">$\alpha$</td><td><q>alpha</q>（アルファ）</td><td>アルファ</td></tr>
+<tr><td class="sym">$\beta$</td><td><q>beta</q>（米：ベイタ／英：ビータ）</td><td>ベータ</td></tr>
+<tr><td class="sym">$\gamma,\ \Gamma$</td><td><q>gamma</q>（ギャマ）</td><td>ガンマ</td></tr>
+<tr><td class="sym">$\delta,\ \Delta$</td><td><q>delta</q>（デルタ）</td><td>デルタ</td></tr>
+<tr><td class="sym">$\epsilon,\ \varepsilon$</td><td><q>epsilon</q>（エプシロン）</td><td>イプシロン</td></tr>
+<tr><td class="sym">$\zeta$</td><td><q>zeta</q>（米：ゼイタ／英：ジータ）</td><td>ゼータ</td></tr>
+<tr><td class="sym">$\eta$</td><td><q>eta</q>（米：エイタ／英：イータ）</td><td>イータ</td></tr>
+<tr><td class="sym">$\theta$</td><td><q>theta</q>（セイタ／シータ）</td><td>シータ</td></tr>
+<tr><td class="sym">$\kappa$</td><td><q>kappa</q>（キャパ）</td><td>カッパ</td></tr>
+<tr><td class="sym">$\lambda$</td><td><q>lambda</q>（ラムダ）</td><td>ラムダ</td></tr>
+<tr><td class="sym">$\mu$</td><td><q>mu</q>（ミュー）</td><td>ミュー</td></tr>
+<tr><td class="sym">$\nu$</td><td><q>nu</q>（ニュー）</td><td>ニュー</td></tr>
+<tr><td class="sym">$\xi$</td><td><q>xi</q>（クサイ／ザイ）</td><td>グザイ、クシー</td></tr>
+<tr><td class="sym">$\pi$</td><td><q>pi</q>（パイ）</td><td>パイ</td></tr>
+<tr><td class="sym">$\rho$</td><td><q>rho</q>（ロウ）</td><td>ロー</td></tr>
+<tr><td class="sym">$\sigma,\ \Sigma$</td><td><q>sigma</q>（シグマ）</td><td>シグマ</td></tr>
+<tr><td class="sym">$\tau$</td><td><q>tau</q>（タウ／トー）</td><td>タウ</td></tr>
+<tr><td class="sym">$\phi,\ \varphi$</td><td><q>phi</q>（ファイ／フィー）</td><td>ファイ</td></tr>
+<tr><td class="sym">$\chi$</td><td><q>chi</q>（カイ）</td><td>カイ</td></tr>
+<tr><td class="sym">$\psi$</td><td><q>psi</q>（サイ）</td><td>プサイ</td></tr>
+<tr><td class="sym">$\omega,\ \Omega$</td><td><q>omega</q>（オウメガ）</td><td>オメガ</td></tr>
+</table>
+</div>
+<div class="warn">特に $\xi$（日本：グザイ → 英語：クサイ/ザイ）、$\psi$（日本：プサイ → 英語：サイ）、$\epsilon$（日本：イプシロン → 英語：エプシロン）は通じにくいことがある。</div>
+</section>
+
+</main>
+<button class="toc-btn" id="toc-btn" type="button" aria-label="目次を開く" aria-expanded="false" aria-controls="side-toc">
+  <svg class="ic-menu" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  <svg class="ic-close" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+</button>
+<div class="toc-backdrop" id="toc-backdrop"></div>
+<aside class="side-toc" id="side-toc" aria-label="目次">
+  <p class="side-title">CONTENTS</p>
+  <ol id="side-toc-list"></ol>
+</aside>
+
+<script>
+(function () {
+  function cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+  function hexToRgb(h) {
+    h = h.replace('#', '');
+    if (h.length === 3) h = h.split('').map(function (c) { return c + c; }).join('');
+    return [parseInt(h.substr(0, 2), 16), parseInt(h.substr(2, 2), 16), parseInt(h.substr(4, 2), 16)];
+  }
+  var palette = {};
+  function loadPalette() {
+    palette.bg = hexToRgb(cssVar('--bg'));
+    palette.pos = hexToRgb(cssVar('--pos'));
+    palette.neg = hexToRgb(cssVar('--neg'));
+    palette.fg = cssVar('--fg');
+    palette.muted = cssVar('--muted');
+    palette.line = cssVar('--line');
+    palette.arrow = cssVar('--arrow');
+    palette.particle = cssVar('--particle');
+    palette.posHex = cssVar('--pos');
+    palette.negHex = cssVar('--neg');
+    palette.accent = cssVar('--accent');
+  }
+  function diverging(t) {
+    // t in [-1, 1]
+    if (!isFinite(t)) t = 0;
+    t = Math.max(-1, Math.min(1, t));
+    var c = t >= 0 ? palette.pos : palette.neg;
+    var k = Math.pow(Math.abs(t), 0.75) * 0.6;
+    return [
+      Math.round(palette.bg[0] * (1 - k) + c[0] * k),
+      Math.round(palette.bg[1] * (1 - k) + c[1] * k),
+      Math.round(palette.bg[2] * (1 - k) + c[2] * k)
+    ];
+  }
+  function fmt(v, d) {
+    var s = v.toFixed(d);
+    if (/^-0\.?0*$/.test(s)) s = s.slice(1);
+    return s;
+  }
+  function tex(el, src, display) {
+    if (window.katex) {
+      katex.render(src, el, { throwOnError: false, displayMode: !!display });
+    } else {
+      el.textContent = src;
+    }
+  }
+  function setupCanvas(canvas, onResize) {
+    function resize() {
+      var dpr = window.devicePixelRatio || 1;
+      var w = canvas.clientWidth;
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(w * dpr);
+      canvas.style.height = w + 'px';
+      onResize(w, dpr);
+    }
+    if (window.ResizeObserver) new ResizeObserver(resize).observe(canvas);
+    else window.addEventListener('resize', resize);
+    resize();
+  }
+
+  /* ---------------- Quadratic form widget ---------------- */
+  function initQuadratic() {
+    var canvas = document.getElementById('qf-canvas');
+    var ctx = canvas.getContext('2d');
+    var off = document.createElement('canvas');
+    var N = 220, R = 1.5;
+    off.width = N; off.height = N;
+    var octx = off.getContext('2d');
+    var sa = document.getElementById('qf-a'), sb = document.getElementById('qf-b'), sc = document.getElementById('qf-c');
+    var size = 300, dpr = 1;
+
+    var presets = [
+      ['お椀', 1, 0, 1], ['溝', 1, 0, 0], ['鞍', 1, 0, -1], ['伏せたお椀', -1, 0, -1],
+      ['[[2,−1],[−1,2]]', 2, -1, 2], ['[[1,2],[2,1]]', 1, 2, 1]
+    ];
+    var pbox = document.getElementById('qf-presets');
+    presets.forEach(function (p) {
+      var b = document.createElement('button');
+      b.textContent = p[0];
+      b.addEventListener('click', function () { sa.value = p[1]; sb.value = p[2]; sc.value = p[3]; draw(); });
+      pbox.appendChild(b);
+    });
+
+    function draw() {
+      var a = parseFloat(sa.value), b = parseFloat(sb.value), c = parseFloat(sc.value);
+      document.getElementById('qf-a-v').textContent = fmt(a, 1);
+      document.getElementById('qf-b-v').textContent = fmt(b, 1);
+      document.getElementById('qf-c-v').textContent = fmt(c, 1);
+      tex(document.getElementById('qf-matrix'),
+        'A = \\begin{bmatrix} ' + fmt(a, 1) + ' & ' + fmt(b, 1) + ' \\\\ ' + fmt(b, 1) + ' & ' + fmt(c, 1) + ' \\end{bmatrix}', true);
+
+      // eigen
+      var m = (a + c) / 2, disc = Math.sqrt(((a - c) / 2) * ((a - c) / 2) + b * b);
+      var l1 = m + disc, l2 = m - disc;
+      function evec(l) {
+        var vx = b, vy = l - a;
+        var n = Math.hypot(vx, vy);
+        if (n < 1e-9) { vx = c - l; vy = b; n = Math.hypot(vx, vy); }
+        if (n < 1e-9) return null;
+        return [vx / n, vy / n];
+      }
+      var v1 = evec(l1), v2 = evec(l2);
+      if (Math.abs(b) < 1e-9) { v1 = a >= c ? [1, 0] : [0, 1]; v2 = a >= c ? [0, 1] : [1, 0]; }
+      tex(document.getElementById('qf-eig'), '\\lambda_1 = ' + fmt(l1, 2) + ',\\quad \\lambda_2 = ' + fmt(l2, 2));
+      var eps = 1e-9, cls;
+      if (l2 > eps) cls = 'positive definite（お椀）';
+      else if (l1 < -eps) cls = 'negative definite（伏せたお椀）';
+      else if (l1 > eps && l2 < -eps) cls = 'indefinite（鞍）';
+      else if (l1 > eps) cls = 'positive semidefinite（溝）';
+      else if (l2 < -eps) cls = 'negative semidefinite（伏せた溝）';
+      else cls = 'ゼロ行列（真っ平ら）';
+      document.getElementById('qf-class').textContent = cls;
+
+      // field
+      var vals = new Float32Array(N * N), maxAbs = 0;
+      for (var j = 0; j < N; j++) {
+        var y = R - (j + 0.5) / N * 2 * R;
+        for (var i = 0; i < N; i++) {
+          var x = -R + (i + 0.5) / N * 2 * R;
+          var f = a * x * x + 2 * b * x * y + c * y * y;
+          vals[j * N + i] = f;
+          if (Math.abs(f) > maxAbs) maxAbs = Math.abs(f);
+        }
+      }
+      var img = octx.createImageData(N, N);
+      var step = maxAbs > 1e-9 ? maxAbs / 7 : 1;
+      var lineRgb = hexToRgb(palette.muted);
+      for (var k = 0; k < N * N; k++) {
+        var col = maxAbs > 1e-9 ? diverging(vals[k] / maxAbs) : palette.bg.slice();
+        var i2 = k % N, j2 = (k / N) | 0;
+        if (maxAbs > 1e-9) {
+          var q = Math.floor(vals[k] / step);
+          var isLine = (i2 < N - 1 && Math.floor(vals[k + 1] / step) !== q) ||
+                       (j2 < N - 1 && Math.floor(vals[k + N] / step) !== q);
+          if (isLine) col = [lineRgb[0], lineRgb[1], lineRgb[2]];
+        }
+        img.data[k * 4] = col[0]; img.data[k * 4 + 1] = col[1]; img.data[k * 4 + 2] = col[2]; img.data[k * 4 + 3] = 255;
+      }
+      octx.putImageData(img, 0, 0);
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(off, 0, 0, canvas.width, canvas.height);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      var s = size;
+      function toPx(x, y) { return [(x + R) / (2 * R) * s, (R - y) / (2 * R) * s]; }
+      // axes
+      ctx.strokeStyle = palette.line; ctx.lineWidth = 1;
+      ctx.beginPath(); var p0 = toPx(-R, 0), p1 = toPx(R, 0); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]);
+      p0 = toPx(0, -R); p1 = toPx(0, R); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.stroke();
+      // eigenvectors
+      [[v1, l1], [v2, l2]].forEach(function (e) {
+        if (!e[0]) return;
+        var v = e[0], l = e[1];
+        ctx.strokeStyle = Math.abs(l) < 1e-9 ? palette.muted : (l > 0 ? palette.posHex : palette.negHex);
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash(Math.abs(l) < 1e-9 ? [6, 5] : []);
+        var A = toPx(-v[0] * R * 1.4, -v[1] * R * 1.4), B = toPx(v[0] * R * 1.4, v[1] * R * 1.4);
+        ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke();
+        ctx.setLineDash([]);
+      });
+    }
+    [sa, sb, sc].forEach(function (el) { el.addEventListener('input', draw); });
+    setupCanvas(canvas, function (w, d) { size = w; dpr = d; draw(); });
+  }
+
+  /* ---------------- Vector field widget ---------------- */
+  function initVectorField() {
+    var R = 2;
+    var FIELDS = [
+      { id: 'source', name: '湧き出し', f: function (x, y) { return [x, y]; },
+        tex: '\\mathbf{u} = \\begin{bmatrix} x \\\\ y \\end{bmatrix},\\quad \\nabla\\cdot\\mathbf{u} = 2,\\quad \\operatorname{curl}\\mathbf{u} = 0',
+        note: '全方向に湧き出す流れ。div はどこでも正で、水車は回らない。' },
+      { id: 'sink', name: '吸い込み', f: function (x, y) { return [-x, -y]; },
+        tex: '\\mathbf{u} = \\begin{bmatrix} -x \\\\ -y \\end{bmatrix},\\quad \\nabla\\cdot\\mathbf{u} = -2,\\quad \\operatorname{curl}\\mathbf{u} = 0',
+        note: '中心に吸い込まれる流れ。div はどこでも負。' },
+      { id: 'rot', name: '剛体回転', f: function (x, y) { return [-y, x]; },
+        tex: '\\mathbf{u} = \\begin{bmatrix} -y \\\\ x \\end{bmatrix},\\quad \\nabla\\cdot\\mathbf{u} = 0,\\quad \\operatorname{curl}\\mathbf{u} = 2',
+        note: 'コップの水ごと回すような流れ。どこに水車を置いても反時計回りに同じ速さで回る。' },
+      { id: 'shear', name: 'せん断流', f: function (x, y) { return [y, 0]; },
+        tex: '\\mathbf{u} = \\begin{bmatrix} y \\\\ 0 \\end{bmatrix},\\quad \\nabla\\cdot\\mathbf{u} = 0,\\quad \\operatorname{curl}\\mathbf{u} = -1',
+        note: '流線はまっすぐなのに水車は時計回りに回る（上と下で流れの速さが違うため）。curl は「流れが曲がっているか」ではない。' },
+      { id: 'vortex', name: '渦（ランキン渦）', f: function (x, y) {
+          var r2 = x * x + y * y, rc2 = 0.16, k = 0.6;
+          if (r2 < rc2) return [-y * k / rc2, x * k / rc2];
+          return [-y * k / r2, x * k / r2];
+        },
+        tex: '\\mathbf{u} = \\frac{k}{r^2}\\begin{bmatrix} -y \\\\ x \\end{bmatrix}\\ (r > r_c),\\quad \\nabla\\cdot\\mathbf{u} = 0,\\quad \\operatorname{curl}\\mathbf{u} = 0\\ (r > r_c)',
+        note: '粒子はぐるぐる回るのに、芯（中心付近）の外では水車は回らない（自由渦）。渦度は芯に集中している。背景を curl にして確かめてみて。' },
+      { id: 'saddle', name: '鞍型（ひずみ流）', f: function (x, y) { return [x, -y]; },
+        tex: '\\mathbf{u} = \\begin{bmatrix} x \\\\ -y \\end{bmatrix} = \\nabla\\!\\left(\\tfrac{x^2 - y^2}{2}\\right),\\quad \\nabla\\cdot\\mathbf{u} = 0,\\quad \\operatorname{curl}\\mathbf{u} = 0',
+        note: '横に引き伸ばし、縦に縮める流れ。gradient 場なので curl はゼロ。' },
+      { id: 'spiral', name: '渦巻き', f: function (x, y) { return [x - y, x + y]; },
+        tex: '\\mathbf{u} = \\begin{bmatrix} x - y \\\\ x + y \\end{bmatrix},\\quad \\nabla\\cdot\\mathbf{u} = 2,\\quad \\operatorname{curl}\\mathbf{u} = 2',
+        note: '湧き出し＋剛体回転の重ね合わせ。div も curl も正。' },
+      { id: 'example', name: '計算例', f: function (x, y) { return [x * x * y, -x * y * y]; },
+        tex: '\\mathbf{u} = \\begin{bmatrix} x^2 y \\\\ -x y^2 \\end{bmatrix},\\quad \\nabla\\cdot\\mathbf{u} = 0,\\quad \\operatorname{curl}\\mathbf{u} = -(x^2 + y^2)',
+        note: '本文の例。div はどこでも 0（非圧縮）、curl は外側ほど強い時計回り。' }
+    ];
+    var canvas = document.getElementById('vf-canvas');
+    var ctx = canvas.getContext('2d');
+    var heat = document.createElement('canvas');
+    var HN = 120; heat.width = HN; heat.height = HN;
+    var hctx = heat.getContext('2d');
+    var size = 400, dpr = 1;
+    var field = FIELDS[0], bgMode = 'div';
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var partBox = document.getElementById('vf-particles');
+    if (reduce) partBox.checked = false;
+    var probe = [0.9, 0.7], wheelAngle = 0;
+    var speedScale = 1, medianMag = 1;
+    var particles = [];
+
+    function div(x, y) {
+      var h = 1e-3, f = field.f;
+      return (f(x + h, y)[0] - f(x - h, y)[0]) / (2 * h) + (f(x, y + h)[1] - f(x, y - h)[1]) / (2 * h);
+    }
+    function curl(x, y) {
+      var h = 1e-3, f = field.f;
+      return (f(x + h, y)[1] - f(x - h, y)[1]) / (2 * h) - (f(x, y + h)[0] - f(x, y - h)[0]) / (2 * h);
+    }
+
+    var fbox = document.getElementById('vf-fields');
+    FIELDS.forEach(function (F, idx) {
+      var b = document.createElement('button');
+      b.textContent = F.name;
+      if (idx === 0) b.className = 'on';
+      b.addEventListener('click', function () {
+        Array.prototype.forEach.call(fbox.children, function (c) { c.className = ''; });
+        b.className = 'on';
+        setField(F);
+      });
+      fbox.appendChild(b);
+    });
+    var bgBox = document.getElementById('vf-bg');
+    Array.prototype.forEach.call(bgBox.children, function (b) {
+      b.addEventListener('click', function () {
+        Array.prototype.forEach.call(bgBox.children, function (c) { c.className = ''; });
+        b.className = 'on';
+        bgMode = b.getAttribute('data-v');
+        buildHeat();
+      });
+    });
+
+    function setField(F) {
+      field = F;
+      tex(document.getElementById('vf-formula'), F.tex, true);
+      document.getElementById('vf-note').textContent = F.note;
+      // typical magnitude
+      var mags = [];
+      for (var j = 0; j < 21; j++) for (var i = 0; i < 21; i++) {
+        var x = -R + i / 20 * 2 * R, y = -R + j / 20 * 2 * R, v = F.f(x, y);
+        mags.push(Math.hypot(v[0], v[1]));
+      }
+      mags.sort(function (a, b) { return a - b; });
+      medianMag = mags[Math.floor(mags.length / 2)] || 1;
+      if (medianMag < 1e-6) medianMag = 1;
+      speedScale = 0.55 / medianMag;
+      initParticles();
+      buildHeat();
+    }
+
+    function buildHeat() {
+      var img = hctx.createImageData(HN, HN);
+      if (bgMode === 'none') {
+        for (var k = 0; k < HN * HN; k++) {
+          img.data[k * 4] = palette.bg[0]; img.data[k * 4 + 1] = palette.bg[1]; img.data[k * 4 + 2] = palette.bg[2]; img.data[k * 4 + 3] = 255;
+        }
+        hctx.putImageData(img, 0, 0);
+        return;
+      }
+      var g = bgMode === 'div' ? div : curl;
+      var vals = new Float32Array(HN * HN), abs = [];
+      for (var j = 0; j < HN; j++) {
+        var y = R - (j + 0.5) / HN * 2 * R;
+        for (var i = 0; i < HN; i++) {
+          var x = -R + (i + 0.5) / HN * 2 * R;
+          var v = g(x, y);
+          vals[j * HN + i] = v; abs.push(Math.abs(v));
+        }
+      }
+      abs.sort(function (a, b) { return a - b; });
+      var sc = abs[Math.floor(abs.length * 0.97)];
+      for (var k2 = 0; k2 < HN * HN; k2++) {
+        var col = sc > 1e-6 ? diverging(vals[k2] / sc) : palette.bg;
+        img.data[k2 * 4] = col[0]; img.data[k2 * 4 + 1] = col[1]; img.data[k2 * 4 + 2] = col[2]; img.data[k2 * 4 + 3] = 255;
+      }
+      hctx.putImageData(img, 0, 0);
+    }
+
+    function spawn(p) {
+      p.x = -R + Math.random() * 2 * R;
+      p.y = -R + Math.random() * 2 * R;
+      p.age = 0;
+      p.life = 80 + Math.random() * 120;
+      p.trail = [];
+    }
+    function initParticles() {
+      particles = [];
+      for (var i = 0; i < 260; i++) { var p = {}; spawn(p); p.age = Math.random() * p.life; particles.push(p); }
+    }
+
+    function toPx(x, y) { return [(x + R) / (2 * R) * size, (R - y) / (2 * R) * size]; }
+    function toWorld(px, py) { return [px / size * 2 * R - R, R - py / size * 2 * R]; }
+
+    function drawArrow(x0, y0, dx, dy, head) {
+      ctx.beginPath();
+      ctx.moveTo(x0, y0); ctx.lineTo(x0 + dx, y0 + dy); ctx.stroke();
+      var a = Math.atan2(dy, dx);
+      ctx.beginPath();
+      ctx.moveTo(x0 + dx, y0 + dy);
+      ctx.lineTo(x0 + dx - head * Math.cos(a - 0.45), y0 + dy - head * Math.sin(a - 0.45));
+      ctx.lineTo(x0 + dx - head * Math.cos(a + 0.45), y0 + dy - head * Math.sin(a + 0.45));
+      ctx.closePath(); ctx.fill();
+    }
+
+    var last = 0;
+    function frame(t) {
+      var dt = last ? Math.min(0.05, (t - last) / 1000) : 0.016;
+      last = t;
+      // advance particles
+      if (partBox.checked) {
+        particles.forEach(function (p) {
+          var v = field.f(p.x, p.y);
+          var k = speedScale * dt;
+          // midpoint step
+          var mx = p.x + v[0] * k * 0.5, my = p.y + v[1] * k * 0.5;
+          var v2 = field.f(mx, my);
+          p.trail.push([p.x, p.y]);
+          if (p.trail.length > 10) p.trail.shift();
+          p.x += v2[0] * k; p.y += v2[1] * k;
+          p.age++;
+          if (p.age > p.life || Math.abs(p.x) > R || Math.abs(p.y) > R || !isFinite(p.x)) spawn(p);
+        });
+      }
+      var cw = curl(probe[0], probe[1]);
+      wheelAngle += cw / 2 * speedScale * dt;
+
+      // draw
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(heat, 0, 0, canvas.width, canvas.height);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      // axes
+      ctx.strokeStyle = palette.line; ctx.lineWidth = 1;
+      ctx.beginPath();
+      var a0 = toPx(-R, 0), a1 = toPx(R, 0); ctx.moveTo(a0[0], a0[1]); ctx.lineTo(a1[0], a1[1]);
+      a0 = toPx(0, -R); a1 = toPx(0, R); ctx.moveTo(a0[0], a0[1]); ctx.lineTo(a1[0], a1[1]);
+      ctx.stroke();
+
+      // arrows
+      var G = 15, cell = size / G;
+      ctx.strokeStyle = palette.arrow; ctx.fillStyle = palette.arrow; ctx.lineWidth = 1.3;
+      ctx.globalAlpha = 0.75;
+      for (var j = 0; j < G; j++) for (var i = 0; i < G; i++) {
+        var px = (i + 0.5) * cell, py = (j + 0.5) * cell;
+        var w = toWorld(px, py), v = field.f(w[0], w[1]);
+        var m = Math.hypot(v[0], v[1]);
+        if (m < 1e-9) continue;
+        var len = cell * 0.85 * (m / (m + medianMag));
+        var dx = v[0] / m * len, dy = -v[1] / m * len;
+        drawArrow(px - dx / 2, py - dy / 2, dx, dy, Math.min(5, len * 0.4));
+      }
+      ctx.globalAlpha = 1;
+
+      // particles
+      if (partBox.checked) {
+        ctx.strokeStyle = palette.particle; ctx.lineWidth = 1.2;
+        particles.forEach(function (p) {
+          if (p.trail.length < 2) return;
+          var fade = Math.min(1, p.age / 15, (p.life - p.age) / 15);
+          ctx.globalAlpha = 0.55 * Math.max(0, fade);
+          ctx.beginPath();
+          var q = toPx(p.trail[0][0], p.trail[0][1]); ctx.moveTo(q[0], q[1]);
+          for (var k = 1; k < p.trail.length; k++) { q = toPx(p.trail[k][0], p.trail[k][1]); ctx.lineTo(q[0], q[1]); }
+          q = toPx(p.x, p.y); ctx.lineTo(q[0], q[1]);
+          ctx.stroke();
+        });
+        ctx.globalAlpha = 1;
+      }
+
+      // paddle wheel
+      var c = toPx(probe[0], probe[1]), r = Math.max(14, size * 0.04);
+      ctx.fillStyle = palette.bg.length ? 'rgba(' + palette.bg.join(',') + ',0.85)' : '#fff';
+      ctx.beginPath(); ctx.arc(c[0], c[1], r + 3, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = palette.accent; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(c[0], c[1], r, 0, Math.PI * 2); ctx.stroke();
+      for (var s = 0; s < 4; s++) {
+        var ang = -wheelAngle + s * Math.PI / 2;
+        ctx.beginPath(); ctx.moveTo(c[0], c[1]);
+        ctx.lineTo(c[0] + r * Math.cos(ang), c[1] + r * Math.sin(ang)); ctx.stroke();
+        ctx.beginPath(); ctx.arc(c[0] + r * Math.cos(ang), c[1] + r * Math.sin(ang), 3, 0, Math.PI * 2);
+        ctx.fillStyle = palette.accent; ctx.fill();
+      }
+
+      // readout
+      var dv = div(probe[0], probe[1]);
+      document.getElementById('vf-probe-div').textContent = 'div = ' + fmt(dv, 2);
+      document.getElementById('vf-probe-curl').textContent = 'curl = ' + fmt(cw, 2);
+      document.getElementById('vf-probe-wheel').textContent =
+        Math.abs(cw) < 0.02 ? '水車：回らない' : (cw > 0 ? '水車：反時計回り' : '水車：時計回り');
+
+      requestAnimationFrame(frame);
+    }
+
+    var pressed = false;
+    function setProbe(e) {
+      var rect = canvas.getBoundingClientRect();
+      var w = toWorld(e.clientX - rect.left, e.clientY - rect.top);
+      probe = [Math.max(-R, Math.min(R, w[0])), Math.max(-R, Math.min(R, w[1]))];
+    }
+    canvas.addEventListener('pointerdown', function (e) { pressed = true; canvas.setPointerCapture(e.pointerId); setProbe(e); });
+    canvas.addEventListener('pointermove', function (e) { if (pressed) setProbe(e); });
+    canvas.addEventListener('pointerup', function () { pressed = false; });
+    canvas.addEventListener('pointercancel', function () { pressed = false; });
+
+    setupCanvas(canvas, function (w, d) { size = w; dpr = d; });
+    setField(FIELDS[0]);
+    requestAnimationFrame(frame);
+  }
+
+  /* ---------------- SE(2) interpolation widget ---------------- */
+  function initSE2() {
+    var canvas = document.getElementById('se2-canvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var size = 400, dpr = 1, R = 2.2;
+    var A = { x: -1.3, y: -0.9, th: 0 };
+    var B = { x: 1.2, y: 0.7, th: 150 * Math.PI / 180 };
+    var st = document.getElementById('se2-t'), sth = document.getElementById('se2-th');
+
+    function compose(X, Y) {
+      var c = Math.cos(X.th), s = Math.sin(X.th);
+      return { x: X.x + c * Y.x - s * Y.y, y: X.y + s * Y.x + c * Y.y, th: X.th + Y.th };
+    }
+    function inverse(X) {
+      var c = Math.cos(X.th), s = Math.sin(X.th);
+      return { x: -(c * X.x + s * X.y), y: -(-s * X.x + c * X.y), th: -X.th };
+    }
+    function coeffs(th) {
+      if (Math.abs(th) < 1e-6) return [1 - th * th / 6, th / 2];
+      return [Math.sin(th) / th, (1 - Math.cos(th)) / th];
+    }
+    function expm(t) {
+      var ab = coeffs(t[2]), a = ab[0], b = ab[1];
+      return { x: a * t[0] - b * t[1], y: b * t[0] + a * t[1], th: t[2] };
+    }
+    function logm(X) {
+      var th = Math.atan2(Math.sin(X.th), Math.cos(X.th));
+      var ab = coeffs(th), a = ab[0], b = ab[1], d = a * a + b * b;
+      return [(a * X.x + b * X.y) / d, (-b * X.x + a * X.y) / d, th];
+    }
+    function wrap(a) { return Math.atan2(Math.sin(a), Math.cos(a)); }
+    function lieInterp(t) {
+      var tau = logm(compose(inverse(A), B));
+      return compose(A, expm([tau[0] * t, tau[1] * t, tau[2] * t]));
+    }
+    function linInterp(t) {
+      var d = wrap(B.th - A.th);
+      return { x: A.x + (B.x - A.x) * t, y: A.y + (B.y - A.y) * t, th: A.th + d * t };
+    }
+    function toPx(x, y) { return [(x + R) / (2 * R) * size, (R - y) / (2 * R) * size]; }
+    function toWorld(px, py) { return [px / size * 2 * R - R, R - py / size * 2 * R]; }
+
+    function drawPose(P, color, scale, alpha) {
+      var c = toPx(P.x, P.y), L = size / (2 * R) * scale;
+      var cs = Math.cos(P.th), sn = Math.sin(P.th);
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(c[0] + L * cs, c[1] - L * sn);
+      ctx.lineTo(c[0] - L * 0.6 * cs - L * 0.5 * sn, c[1] + L * 0.6 * sn - L * 0.5 * cs);
+      ctx.lineTo(c[0] - L * 0.6 * cs + L * 0.5 * sn, c[1] + L * 0.6 * sn + L * 0.5 * cs);
+      ctx.closePath(); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    function path(fn, color, dash) {
+      ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.setLineDash(dash);
+      ctx.beginPath();
+      for (var i = 0; i <= 80; i++) {
+        var P = fn(i / 80), q = toPx(P.x, P.y);
+        if (i) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]);
+      }
+      ctx.stroke(); ctx.setLineDash([]);
+      for (var k = 1; k < 5; k++) drawPose(fn(k / 5), color, 0.12, 0.35);
+    }
+    function draw() {
+      var t = parseFloat(st.value);
+      document.getElementById('se2-t-v').textContent = fmt(t, 2);
+      document.getElementById('se2-th-v').textContent = Math.round(B.th * 180 / Math.PI) + '°';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.fillStyle = 'rgb(' + palette.bg.join(',') + ')';
+      ctx.fillRect(0, 0, size, size);
+      ctx.strokeStyle = palette.line; ctx.lineWidth = 1;
+      for (var g = -2; g <= 2; g++) {
+        var p0 = toPx(g, -R), p1 = toPx(g, R);
+        ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.stroke();
+        p0 = toPx(-R, g); p1 = toPx(R, g);
+        ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.stroke();
+      }
+      path(linInterp, palette.negHex, [5, 5]);
+      path(lieInterp, palette.posHex, []);
+      drawPose(linInterp(t), palette.negHex, 0.2, 1);
+      drawPose(lieInterp(t), palette.posHex, 0.2, 1);
+      drawPose(A, palette.fg, 0.2, 1);
+      drawPose(B, palette.fg, 0.2, 1);
+      ctx.fillStyle = palette.fg; ctx.font = 'bold 14px sans-serif';
+      var a = toPx(A.x, A.y), b = toPx(B.x, B.y);
+      ctx.fillText('A', a[0] - 6, a[1] + 26); ctx.fillText('B', b[0] - 6, b[1] + 26);
+      var tau = logm(compose(inverse(A), B));
+      tex(document.getElementById('se2-tau'),
+        '\\boldsymbol{\\tau} = B \\ominus A = (\\rho_x, \\rho_y, \\theta) = (' + fmt(tau[0], 2) + ',\\ ' + fmt(tau[1], 2) + ',\\ ' + fmt(tau[2], 2) + '\\,\\mathrm{rad})');
+    }
+    var pressed = false;
+    function moveB(e) {
+      var rect = canvas.getBoundingClientRect();
+      var w = toWorld(e.clientX - rect.left, e.clientY - rect.top);
+      B.x = Math.max(-R + 0.2, Math.min(R - 0.2, w[0]));
+      B.y = Math.max(-R + 0.2, Math.min(R - 0.2, w[1]));
+      draw();
+    }
+    canvas.addEventListener('pointerdown', function (e) { pressed = true; canvas.setPointerCapture(e.pointerId); moveB(e); });
+    canvas.addEventListener('pointermove', function (e) { if (pressed) moveB(e); });
+    canvas.addEventListener('pointerup', function () { pressed = false; });
+    canvas.addEventListener('pointercancel', function () { pressed = false; });
+    st.addEventListener('input', draw);
+    sth.addEventListener('input', function () { B.th = parseFloat(sth.value) * Math.PI / 180; draw(); });
+    setupCanvas(canvas, function (w, d) { size = w; dpr = d; draw(); });
+  }
+
+  /* ---------------- sticky TOC with scroll-spy ---------------- */
+  function initSideToc() {
+    var list = document.getElementById('side-toc-list');
+    if (!list) return;
+    var sections = Array.prototype.slice.call(document.querySelectorAll('main > section[id]'));
+    var links = {};
+    sections.forEach(function (sec) {
+      var h2 = sec.querySelector('h2');
+      if (!h2) return;
+      var li = document.createElement('li'), a = document.createElement('a');
+      a.href = '#' + sec.id; a.textContent = h2.textContent.replace(/^\d+\.\s*/, '');
+      li.appendChild(a); list.appendChild(li); links[sec.id] = a;
+    });
+    function update() {
+      var y = window.scrollY + window.innerHeight * 0.3, cur = sections[0] && sections[0].id;
+      sections.forEach(function (sec) { if (sec.offsetTop <= y) cur = sec.id; });
+      Object.keys(links).forEach(function (id) { links[id].className = id === cur ? 'on' : ''; });
+    }
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    update();
+
+    // open / close
+    var btn = document.getElementById('toc-btn'), backdrop = document.getElementById('toc-backdrop');
+    var wideMq = window.matchMedia('(min-width: 1280px)');
+    var KEY = 'toc-open-wide';
+    function isOpen() { return document.body.classList.contains('toc-open'); }
+    function setOpen(open, remember) {
+      document.body.classList.toggle('toc-open', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      btn.setAttribute('aria-label', open ? '目次を閉じる' : '目次を開く');
+      if (remember && wideMq.matches) { try { localStorage.setItem(KEY, open ? '1' : '0'); } catch (e) {} }
+    }
+    function applyDefault() {
+      if (wideMq.matches) {
+        var saved = null; try { saved = localStorage.getItem(KEY); } catch (e) {}
+        setOpen(saved !== '0', false);
+      } else {
+        setOpen(false, false);
+      }
+    }
+    btn.addEventListener('click', function () { setOpen(!isOpen(), true); });
+    backdrop.addEventListener('click', function () { setOpen(false, false); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && isOpen()) setOpen(false, false); });
+    list.addEventListener('click', function (e) {
+      if (e.target.tagName === 'A' && !wideMq.matches) setOpen(false, false);
+    });
+    if (wideMq.addEventListener) wideMq.addEventListener('change', applyDefault);
+    applyDefault();
+  }
+
+  window.addEventListener('load', function () {
+    loadPalette();
+    initSideToc();
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],
+        throwOnError: false
+      });
+    }
+    initQuadratic();
+    initVectorField();
+    initSE2();
+    if (window.matchMedia) {
+      var mq = window.matchMedia('(prefers-color-scheme: dark)');
+      var onChange = function () { loadPalette(); };
+      if (mq.addEventListener) mq.addEventListener('change', onChange);
+    }
+  });
+})();
+</script>
+</body>
+</html>
