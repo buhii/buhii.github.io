@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="fi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>tarkistin</title>
+<style>
+  :root { --bg:#fff; --text:#000; --muted:#666; --line:#000; --hit:#000; --hit-text:#fff; --b:#888; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg:#000; --text:#ddd; --muted:#888; --line:#ddd; --hit:#ddd; --hit-text:#000; --b:#666; }
+  }
+  * { box-sizing: border-box; border-radius: 0 !important; }
+  body { margin:0; background:var(--bg); color:var(--text); font:14px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+  main { max-width:720px; margin:0 auto; padding:16px; }
+  h1 { font-size:14px; margin:0 0 16px; }
+  section { margin-bottom:16px; }
+  h2 { font-size:14px; margin:0 0 4px; font-weight:normal; color:var(--muted); }
+  .toggle button { border:1px solid var(--line); background:var(--bg); color:var(--text); font:inherit; padding:2px 10px; cursor:pointer; }
+  .toggle button.on { background:var(--text); color:var(--bg); }
+  .row { display:flex; flex-wrap:wrap; gap:4px; align-items:center; margin:4px 0; }
+  .label { width:7em; color:var(--muted); }
+  input, textarea { font:inherit; color:var(--text); background:var(--bg); border:1px solid var(--line); }
+  input.num { width:3em; text-align:center; padding:2px; }
+  input.num.bonus { border-style:dashed; }
+  input.num.bad { outline:2px solid red; }
+  textarea { width:100%; min-height:140px; padding:4px; resize:vertical; }
+  details summary { cursor:pointer; color:var(--muted); }
+  table { border-collapse:collapse; width:100%; }
+  th, td { border-bottom:1px solid var(--muted); padding:2px 4px; text-align:left; }
+  th { color:var(--muted); font-weight:normal; }
+  .prize-input { width:10em; text-align:right; padding:1px 4px; }
+  .judge { font:inherit; border:1px solid var(--line); background:var(--text); color:var(--bg); padding:4px 16px; cursor:pointer; }
+  .err { color:red; margin-top:4px; min-height:1em; }
+  .balls { display:flex; gap:4px; }
+  .b { display:inline-block; width:2ch; text-align:center; }
+  .b.hit { background:var(--hit); color:var(--hit-text); }
+  .b.bhit { text-decoration:underline; }
+  .rank.win { font-weight:bold; }
+  .total { padding:4px 0; }
+  .total .big { font-size:20px; font-weight:bold; }
+  .note { color:var(--muted); font-size:12px; margin:4px 0; }
+  .tablewrap { overflow-x:auto; }
+</style>
+</head>
+<body>
+<main>
+  <h1>TARKISTIN v0.6.7</h1>
+
+  <section>
+    <div class="toggle" id="toggle">
+      <button data-mode="6">v6</button>
+      <button data-mode="7">v7</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>AVAIN</h2>
+    <textarea id="official" style="min-height:90px" placeholder="-----ALKU AVAINLOHKO-----"></textarea>
+    <div class="note" id="officialMsg"></div>
+    <div class="row"><span class="label">pää</span><span id="mainBox" class="row" style="margin:0"></span></div>
+    <div class="row"><span class="label">suola</span><span id="bonusBox" class="row" style="margin:0"></span></div>
+    
+  </section>
+
+  <section>
+    <h2>KUORMA</h2>
+    <textarea id="tickets" placeholder="-----ALKU KUORMA-----"></textarea>
+    <details style="margin-top:10px">
+      <summary>painot</summary>
+      <div class="tablewrap" style="margin-top:8px"><table id="prizeTable"></table></div>
+    </details>
+  </section>
+
+  <button class="judge" id="judge">tarkista</button>
+  <div class="err" id="err"></div>
+
+  <section id="result" hidden></section>
+</main>
+
+<script>
+(() => {
+  const CONF = {
+    6: {
+      name: 'v6', main: 6, bonus: 1, max: 43, price: 200,
+      tiers: [
+        { rank: 'T1', cond: '6/6', prize: 200000000 },
+        { rank: 'T2', cond: '5/6+s', prize: 10000000 },
+        { rank: 'T3', cond: '5/6', prize: 300000 },
+        { rank: 'T4', cond: '4/6', prize: 6800 },
+        { rank: 'T5', cond: '3/6 (kiinte\u00e4)', prize: 1000 },
+      ],
+      judge: (m, b) => m === 6 ? 0 : (m === 5 && b) ? 1 : m === 5 ? 2 : m === 4 ? 3 : m === 3 ? 4 : -1,
+    },
+    7: {
+      name: 'v7', main: 7, bonus: 2, max: 37, price: 300,
+      tiers: [
+        { rank: 'T1', cond: '7/7', prize: 600000000 },
+        { rank: 'T2', cond: '6/7+s', prize: 7300000 },
+        { rank: 'T3', cond: '6/7', prize: 730000 },
+        { rank: 'T4', cond: '5/7', prize: 9100 },
+        { rank: 'T5', cond: '4/7', prize: 1400 },
+        { rank: 'T6', cond: '3/7+s', prize: 1100 },
+      ],
+      judge: (m, b) => m === 7 ? 0 : (m === 6 && b) ? 1 : m === 6 ? 2 : m === 5 ? 3 : m === 4 ? 4 : (m === 3 && b) ? 5 : -1,
+    },
+  };
+
+  const $ = id => document.getElementById(id);
+  let state = { mode: '7', win: { 6: [], 7: [] }, bonus: { 6: [], 7: [] }, prizes: {}, text: '' };
+  const save = () => {};
+
+  const toHalf = s => s.replace(/[\uff10-\uff19]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).replace(/\u3000/g, ' ');
+  const yen = n => (n < 0 ? '-' : '') + '0x' + Math.abs(n).toString(16).toUpperCase().padStart(8, '0');
+
+  function prizesFor(mode) {
+    return CONF[mode].tiers.map((t, i) => {
+      const v = state.prizes[mode] && state.prizes[mode][i];
+      return Number.isFinite(v) ? v : t.prize;
+    });
+  }
+
+  function render() {
+    const mode = state.mode, c = CONF[mode];
+    document.querySelectorAll('#toggle button').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
+
+    const mk = (box, n, arr, isBonus) => {
+      box.innerHTML = '';
+      for (let i = 0; i < n; i++) {
+        const inp = document.createElement('input');
+        inp.className = 'num' + (isBonus ? ' bonus' : '');
+        inp.inputMode = 'numeric';
+        inp.maxLength = 2;
+        inp.placeholder = isBonus ? 'B' + (n > 1 ? i + 1 : '') : String(i + 1);
+        inp.value = arr[i] || '';
+        box.appendChild(inp);
+      }
+    };
+    mk($('mainBox'), c.main, state.win[mode], false);
+    mk($('bonusBox'), c.bonus, state.bonus[mode], true);
+
+    const p = prizesFor(mode);
+    $('prizeTable').innerHTML = '<tr><th>taso</th><th>ehto</th><th>paino</th></tr>' +
+      c.tiers.map((t, i) => `<tr><td>${t.rank}</td><td>${t.cond}</td><td><input class="prize-input" type="number" min="0" data-i="${i}" value="${p[i]}"></td></tr>`).join('');
+  }
+
+  const allNumInputs = () => [...document.querySelectorAll('#mainBox input, #bonusBox input')];
+
+  function syncInputs() {
+    const mode = state.mode;
+    state.win[mode] = [...document.querySelectorAll('#mainBox input')].map(i => i.value.trim());
+    state.bonus[mode] = [...document.querySelectorAll('#bonusBox input')].map(i => i.value.trim());
+    save();
+  }
+
+  document.addEventListener('input', e => {
+    const t = e.target;
+    if (t.classList.contains('num')) {
+      t.value = toHalf(t.value).replace(/\D/g, '');
+      t.classList.remove('bad');
+      if (t.value.length === 2) {
+        const list = allNumInputs(), k = list.indexOf(t);
+        if (list[k + 1]) list[k + 1].focus();
+      }
+      syncInputs();
+    } else if (t.classList.contains('prize-input')) {
+      state.prizes[state.mode] = state.prizes[state.mode] || [];
+      state.prizes[state.mode][+t.dataset.i] = t.value === '' ? NaN : Number(t.value);
+      save();
+    } else if (t.id === 'tickets') {
+      state.text = t.value; save();
+    }
+  });
+
+  document.addEventListener('paste', e => {
+    const t = e.target;
+    if (!t.classList || !t.classList.contains('num')) return;
+    const nums = toHalf(e.clipboardData.getData('text')).match(/\d{1,2}/g);
+    if (!nums || nums.length < 2) return;
+    e.preventDefault();
+    const list = allNumInputs();
+    let k = list.indexOf(t);
+    nums.forEach(n => { if (list[k]) { list[k].value = String(+n); list[k].classList.remove('bad'); k++; } });
+    (list[k] || list[list.length - 1]).focus();
+    syncInputs();
+  });
+
+  document.querySelectorAll('#toggle button').forEach(b => b.addEventListener('click', () => {
+    syncInputs();
+    state.mode = b.dataset.mode; save(); render();
+    $('result').hidden = true; $('err').textContent = '';
+  }));
+
+  function parseTickets(text) {
+    const tickets = [];
+    let label = null;
+    for (const raw of toHalf(text).split(/\r?\n/)) {
+      const line = raw.trim();
+      if (!line) continue;
+      if (/^[A-Za-z]$/.test(line)) { label = line.toUpperCase(); continue; }
+      let m = line.match(/^([A-Za-z])?[\s:\uff1a]*((?:\d{1,2}[\s,\u3001]+){2,}\d{1,2})$/);
+      if (m) {
+        tickets.push({
+          label: (m[1] && m[1].toUpperCase()) || label || String.fromCharCode(65 + tickets.length % 26),
+          nums: m[2].split(/[\s,\u3001]+/).map(Number),
+          kuchi: 1,
+        });
+        label = null;
+        continue;
+      }
+      m = line.match(/\u8cfc\u5165\u53e3\u6570\s*(\d+)\s*\u53e3/);
+      if (m && tickets.length) tickets[tickets.length - 1].kuchi = +m[1];
+    }
+    return tickets;
+  }
+
+  function judge() {
+    syncInputs();
+    const mode = state.mode, c = CONF[mode];
+    const err = msg => { $('err').textContent = msg; $('result').hidden = true; };
+    $('err').textContent = '';
+
+    const mainIn = [...document.querySelectorAll('#mainBox input')];
+    const bonusIn = [...document.querySelectorAll('#bonusBox input')];
+    let ok = true;
+    const seen = new Set();
+    [...mainIn, ...bonusIn].forEach(i => {
+      const v = +i.value;
+      const bad = !i.value || v < 1 || v > c.max || seen.has(v);
+      i.classList.toggle('bad', bad);
+      if (bad) ok = false;
+      seen.add(v);
+    });
+    if (!ok) return err(`VIRHE: virheellinen avain (1-${c.max}, ei toistoja)`);
+
+    const win = new Set(mainIn.map(i => +i.value));
+    const bonus = new Set(bonusIn.map(i => +i.value));
+
+    const tickets = parseTickets($('tickets').value);
+    if (!tickets.length) return err('VIRHE: kuorman j\u00e4sennys ep\u00e4onnistui');
+
+    const prizes = prizesFor(mode);
+    let total = 0, cost = 0,  ohitettu = 0;
+    const counts = c.tiers.map(() => 0);
+
+    const rows = tickets.map(t => {
+      if (t.nums.length !== c.main) {  ohitettu++; return `<tr><td>${t.label}</td><td colspan="4" style="color:var(--muted)">${t.nums.join(' ')} OHITETTU</td></tr>`; }
+      const m = t.nums.filter(n => win.has(n)).length;
+      const bh = t.nums.filter(n => bonus.has(n)).length;
+      const r = c.judge(m, bh);
+      const amount = r >= 0 ? prizes[r] * t.kuchi : 0;
+      total += amount;
+      cost += c.price * t.kuchi;
+      if (r >= 0) counts[r] += t.kuchi;
+      const balls = t.nums.map(n => `<span class="b ${win.has(n) ? 'hit' : bonus.has(n) ? 'bhit' : ''}">${String(n).padStart(2, '0')}</span>`).join('');
+      return `<tr><td>${t.label}</td><td><div class="balls">${balls}</div></td>` +
+        `<td>${m}${bh ? `+B${bh}` : ''}</td>` +
+        `<td class="rank ${r >= 0 ? 'win' : ''}">${r >= 0 ? c.tiers[r].rank : 'HYL\u00c4TTY'}${t.kuchi > 1 ? ` \u00d7${t.kuchi}` : ''}</td>` +
+        `<td style="text-align:right">${amount ? yen(amount) : 'HYL\u00c4TTY'}</td></tr>`;
+    }).join('');
+
+    const net = total - cost;
+
+    const summary = c.tiers.map((t, i) => counts[i] ? `${t.rank}x${counts[i]}` : '').filter(Boolean).join(' / ');
+
+    $('result').innerHTML = `
+      <div class="total">
+        <div>\u03a3</div>
+        <div class="big">${yen(total)}</div>
+        <div class="note">panos ${yen(cost)} / \u0394 <b>${net >= 0 ? '+' : ''}${yen(net)}</b>${summary ? '<br>' + summary : ''}</div>
+      </div>
+      <div class="tablewrap" style="margin-top:12px"><table>
+        <tr><th>tunnus</th><th>sarja</th><th>osumat</th><th>taso</th><th style="text-align:right">paino</th></tr>
+        ${rows}
+      </table></div>
+      <p class="note">k\u00e4\u00e4nteinen=p\u00e4\u00e4 alleviivattu=suola${ ohitettu ? ` / ${ ohitettu} ohitettu` : ''}</p>`;
+    $('result').hidden = false;
+    
+  }
+
+  function parseOfficial(text) {
+    let s = toHalf(text);
+    const first = s.indexOf('\u56de\u5225');
+    if (first >= 0) {
+      const next = s.indexOf('\u56de\u5225', first + 2);
+      s = s.slice(first, next > 0 ? next : undefined);
+    }
+    const iMain = s.indexOf('\u672c\u6570\u5b57'), iBonus = s.indexOf('\u30dc\u30fc\u30ca\u30b9\u6570\u5b57');
+    if (iMain < 0 || iBonus < 0 || iBonus < iMain) return null;
+    const afterBonus = s.slice(iBonus);
+    const iTier = afterBonus.search(/\d\u7b49/);
+    const main = (s.slice(iMain + 3, iBonus).match(/\d{1,2}/g) || []).map(Number);
+    const bonus = (afterBonus.slice(6, iTier > 0 ? iTier : undefined).match(/\d{1,2}/g) || []).map(Number);
+    let mode = null;
+    if (main.length === 6 && bonus.length === 1) mode = '6';
+    else if (main.length === 7 && bonus.length === 2) mode = '7';
+    if (!mode) return null;
+    const draw = (s.match(/\u7b2c\s*(\d+)\s*\u56de/) || [])[1];
+    const prizes = [];
+    const re = /(\d)\u7b49[\s\S]*?(\u8a72\u5f53\u306a\u3057|[\d,]+\u5186)/g;
+    let m;
+    while ((m = re.exec(afterBonus))) {
+      const k = +m[1] - 1;
+      if (k < CONF[mode].tiers.length && prizes[k] === undefined)
+        prizes[k] = m[2] === '\u8a72\u5f53\u306a\u3057' ? null : Number(m[2].replace(/[,\u5186]/g, ''));
+    }
+    return { mode, main, bonus, prizes, draw };
+  }
+
+  $('official').addEventListener('input', () => {
+    const r = parseOfficial($('official').value);
+    if (!r) { $('officialMsg').textContent = $('official').value.trim() ? 'VIRHE: avainlohkon j\u00e4sennys ep\u00e4onnistui' : ''; return; }
+    state.mode = r.mode;
+    state.win[r.mode] = r.main.map(String);
+    state.bonus[r.mode] = r.bonus.map(String);
+    state.prizes[r.mode] = prizesFor(r.mode).map((p, i) => r.prizes[i] != null ? r.prizes[i] : p);
+    save(); render();
+    $('result').hidden = true; $('err').textContent = '';
+    const got = r.prizes.filter(p => p != null).length;
+    $('officialMsg').textContent = `${CONF[r.mode].name}${r.draw ? ` #${r.draw}` : ''} ladattu / painot:${got}`;
+    autoJudge();
+  });
+
+  function autoJudge() {
+    const filled = [...document.querySelectorAll('#mainBox input, #bonusBox input')].every(i => i.value);
+    if (filled && $('tickets').value.trim()) judge();
+  }
+  $('tickets').addEventListener('input', autoJudge);
+
+  $('judge').addEventListener('click', judge);
+  render();
+})();
+</script>
+</body>
+</html>
